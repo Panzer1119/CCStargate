@@ -1,11 +1,11 @@
 --[[
   Author: Panzer1119
   
-  Date: Created 26 Jun 2018 - 04:06 PM
+  Date: Edited 26 Jun 2018 - 04:07 PM
   
-  Original Source: https://github.com/Panzer1119/CCUtils/blob/master/install.lua
+  Original Source: https://github.com/Panzer1119/CCStargate/blob/master/install.lua
   
-  Direct Download: https://raw.githubusercontent.com/Panzer1119/CCUtils/master/install.lua
+  Direct Download: https://raw.githubusercontent.com/Panzer1119/CCStargate/master/install.lua
 ]]--
 
 args = {...}
@@ -13,7 +13,7 @@ args = {...}
 filename_files = "downloads/files.lon"
 print("Downloading " .. filename_files)
 fs.delete(filename_files)
-shell.run("wget https://raw.githubusercontent.com/Panzer1119/CCUtils/master/files.lon " .. filename_files)
+shell.run("wget https://raw.githubusercontent.com/Panzer1119/CCStargate/master/files.lon " .. filename_files)
 
 local f = fs.open(filename_files, "r")
 files = textutils.unserialise(f.readAll())
