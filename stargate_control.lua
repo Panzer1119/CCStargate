@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 02:46 PM
+  Date: Edited 26 Jun 2018 - 02:58 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -48,6 +48,8 @@ security_allow = "ALLOW"
 security_deny = "DENY"
 security_none = "NONE"
 
+-- ########## LOAD BEGIN
+
 function loadBookmarks()
 	bookmarks = utils.readTableFromFile(filename_bookmarks)
 end
@@ -74,7 +76,35 @@ function loadAll()
 	loadHistory()
 end
 
--- Functions for searching an array for a table START
+-- ########## LOAD END
+-- ########## SAVE BEGIN
+
+function saveBookmarks()
+	utils.writeTableToFile(filename_bookmarks, bookmarks)
+end
+
+function saveSecurity()
+	 utils.writeTableToFile(filename_security, security)
+end
+
+function saveSettings()
+	utils.writeTableToFile(filename_settings, settings)
+end
+
+function loadHistory()
+	utils.writeTableToFile(filename_history, history)
+end
+
+function saveAll()
+	saveBookmarks()
+	saveSecurity()
+	saveSettings()
+	saveHistory()
+end
+
+-- ########## SAVE END
+
+-- Functions for searching an array for a table BEGIN
 
 function getId(entry)
 	if (entry ~= nil) then
@@ -694,12 +724,14 @@ function drawRemoteAddress()
 	local x, y = mon.getSize()
 	mon.setCursorPos((x / 2 + 1) - string.len(sg.remoteAddress()) / 2, y / 2 - 2)
 	mon.write(sg.remoteAddress())
+	loadBookmarks()
 	local gate = utils.getTableFromArray(bookmarks, sg.remoteAddress(), getAddress)
 	local found = gate ~= nil
 	if (gate ~= nil) then
 		mon.setCursorPos((x / 2 + 1) - string.len(gate.name) / 2, y / 2)
 		mon.write(name)
 	else
+		loadSecurity()
 		gate = utils.getTableFromArray(security, sg.remoteAddress(), getAddress)
 		if (gate ~= nil) then
 			mon.setCursorPos((x / 2 + 1) - string.len(gate.name) / 2, y / 2)
@@ -722,144 +754,110 @@ function drawHistoryButton()
 end
 
 function addToHistory(address)
-  if fs.exists("history") then
-    file = fs.open("history", "r")
-	history = textutils.unserialize(file.readAll())
-	file.close()
-  else
-	history ={}
-	print("")
-	print("")
-	print("no history file")
-  end
-  if textutils.serialize(history) == false then
-    history = {}
-	print("")
-	print("")
-	print("couldn't serialize")
-  end
-  test = textutils.serialize(historyTable)
-  if string.len(test) < 7 then
-    history = {}
-	print("")
-	print("")
-	print("string.len too short")
-  end
-  table.insert(history, 1, address)
-  file = fs.open("history", "w")
-  file.write(textutils.serialize(history))
-  file.close()
+	loadHistory()
+	table.insert(history, 1, address)
+	saveHistory()
 end
 
 function drawHistoryPage()
-  mon.setBackgroundColor(colors.black)
-  mon.clear()
-  mon.setTextColor(colors.black)
-  x,y = mon.getSize()
-  for yc = 1,y-3 do
-    if yc%2 == 1 then
-      mon.setBackgroundColor(colors.lightBlue)
-	else
-	  mon.setBackgroundColor(colors.lightGray)
+	mon.setBackgroundColor(colors.black)
+	mon.clear()
+	mon.setTextColor(colors.black)
+	local x,y = mon.getSize()
+	for yc = 1, y - 3 do
+		if (yc % 2 == 1) then
+			mon.setBackgroundColor(colors.lightBlue)
+		else
+			mon.setBackgroundColor(colors.lightGray)
+		end
+		for xc = 1, x do
+			mon.setCursorPos(xc, yc)
+			mon.write(" ")
+		end
 	end
-	for xc = 1,x do
-	  mon.setCursorPos(xc, yc)
-	  mon.write(" ")
-	end
-  end
-  if fs.exists("history") then
-    file = fs.open("history","r")
-	historyTable = textutils.unserialize(file.readAll())
-	file.close()
-	test = textutils.serialize(historyTable)
-	if string.len(test) > 7 then
-      for k,v in pairs(historyTable) do
-	    if k%2 == 1 then
-          mon.setBackgroundColor(colors.lightBlue)
-	    else
-	      mon.setBackgroundColor(colors.lightGray)
-	    end
-	    mon.setCursorPos(1,k)
+	loadHistory()
+	for k, v in pairs(history) do
+		if (k % 2 == 1) then
+			mon.setBackgroundColor(colors.lightBlue)
+		else
+			mon.setBackgroundColor(colors.lightGray)
+		end
+		mon.setCursorPos(1, k)
 		mon.write(v)
-	    mon.setCursorPos(x/2+7, k)
-	    mon.setBackgroundColor(colors.blue)
-	    mon.write("SAVE")
-	    mon.setCursorPos(x-8, k)
-	    mon.setBackgroundColor(colors.red)
-	    mon.write("BAN/ALLOW")
+		mon.setCursorPos(x / 2 + 7, k)
+		mon.setBackgroundColor(colors.blue)
+		mon.write("SAVE")
+		mon.setCursorPos(x - 8, k)
+		mon.setBackgroundColor(colors.red)
+		mon.write("BAN/ALLOW")
 		clickLimit = k
-	  end
+	end 
+	mon.setBackgroundColor(colors.black)
+	for yc = y - 2, y do
+		for xc = 1,x do
+			mon.setCursorPos(xc, yc)
+			mon.write(" ")
+		end
 	end
-	test = {}
-  end 
-  mon.setBackgroundColor(colors.black)
-  for yc = y-2, y do
-    for xc = 1,x do
-	  mon.setCursorPos(xc, yc)
-	  mon.write(" ")
-	end
-  end
-  mon.setCursorPos(x/2, y-1)
-  mon.setTextColor(colors.white)
-  mon.write("BACK")
+	mon.setCursorPos(x / 2, y - 1)
+	mon.setTextColor(colors.white)
+	mon.write("BACK")
 end
 
 function historyInputPage(address)
-  cx, cy = term.getCursorPos()
-  mon.clear()
-  term.redirect(mon)
-  term.setBackgroundColor(colors.lightGray)
-  term.setTextColor(colors.white)
-  term.clear()
-  x,y = term.getSize()
-  term.setCursorPos(x/2-8, y/2-2)
-  print("Set an address name")
-  term.setCursorPos(x/2 - 4, y/2)
-  print("         ")
-  term.setCursorPos(x/2 - 4, y/2)
-  nameInput = read()
-  addressInput = "nil"
-  newGate ={name = nameInput, address = address, mode = security_none}
-  term.redirect(term.native())
-  term.clear()
-  term.setCursorPos(1,1)
-  return newGate
+	local cx, cy = term.getCursorPos()
+	mon.clear()
+	term.redirect(mon)
+	term.setBackgroundColor(colors.lightGray)
+	term.setTextColor(colors.white)
+	term.clear()
+	local x, y = term.getSize()
+	term.setCursorPos(x / 2 - 8, y / 2 - 2)
+	print("Set an address name")
+	term.setCursorPos(x / 2 - 4, y / 2)
+	print("         ")
+	term.setCursorPos(x / 2 - 4, y / 2)
+	nameInput = read()
+	addressInput = "nil"
+	newGate = {name = nameInput, address = address, mode = security_none, id = -1}
+	term.redirect(term.native())
+	utils.clear()
+	return newGate
 end
 
 function update()
-  if menu == "main" then
-	drawPowerBar()
-	drawTime()
-  elseif menu == "dial" then
-	--drawBookmarksPage()
-	updateBookmarksPage()
-  elseif menu == "history" then
-	drawHistoryPage()
-  elseif menu == "security" then
-	drawSecurityPageTop()
-	drawSecurityPageBottom(currentSec)
-	--drawSecurityPageBottom(security_deny)
-  end
+	if (menu == "main") then
+		drawPowerBar()
+		drawTime()
+	elseif (menu == "dial") then
+		--drawBookmarksPage()
+		updateBookmarksPage()
+	elseif (menu == "history") then
+		drawHistoryPage()
+	elseif (menu == "security") then
+		drawSecurityPageTop()
+		drawSecurityPageBottom(settings.irisOnIncomingDial)
+		--drawSecurityPageBottom(security_deny)
+	end
 end
 
 function resetTimer()
-  time = 1
-  if menu == "main" then
 	time = 1
-  elseif menu == "dial" or menu == "history" or menu == "security" then
-    time = 1
-  else
-	time = 1
-  end
-  timeout = os.startTimer(time)
+	if (menu == "main") then
+		time = 1
+	elseif (menu == "dial" or menu == "history" or menu == "security") then
+		time = 1
+	else
+		time = 1
+	end
+	timeout = os.startTimer(time)
 end
 
-if fs.exists("currentSec") then -- checks to see if there's list of gates stored for security reasons
-  file = fs.open("currentSec", "r")
-  currentSec = file.readAll()
-  file.close()
-else
-  currentSec = security_none
+loadAll()
+
+if (settings.irisOnIncomingDial == nil) then
+	settings.irisOnIncomingDial = security_none
+	saveSettings()
 end
 mon.setTextScale(1)
 drawHome()
