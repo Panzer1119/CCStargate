@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 10:28 PM
+  Date: Edited 26 Jun 2018 - 10:31 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -1168,7 +1168,7 @@ while true do
 			mon.setTextColor(colors.red)
 			drawRemoteIris()
 		elseif (param2 == "irisState") then
-			sg.sendMessage(irisState)
+			sg.sendMessage(sg.irisState())
 		end
 	elseif (event == "sgStargateStateChange" or event == "sgChevronEngaged") then
 		drawDial()
