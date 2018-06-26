@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 02:42 PM
+  Date: Edited 26 Jun 2018 - 02:46 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -37,10 +37,12 @@ menu = ""
 bookmarks = {}
 security = {}
 settings = {}
+history = {}
 
 filename_bookmarks = "stargate/bookmarks.lon"
 filename_security = "stargate/security.lon"
 filename_settings = "stargate/settings.lon"
+filename_history = "stargate/history.lon"
 
 security_allow = "ALLOW"
 security_deny = "DENY"
@@ -61,10 +63,15 @@ function loadSettings()
 	settings = utils.readTableFromFile(filename_settings)
 end
 
+function loadHistory()
+	history = utils.readTableFromFile(filename_history)
+end
+
 function loadAll()
 	loadBookmarks()
 	loadSecurity()
 	loadSettings()
+	loadHistory()
 end
 
 -- Functions for searching an array for a table START
@@ -687,61 +694,31 @@ function drawRemoteAddress()
 	local x, y = mon.getSize()
 	mon.setCursorPos((x / 2 + 1) - string.len(sg.remoteAddress()) / 2, y / 2 - 2)
 	mon.write(sg.remoteAddress())
-	ff = false -- Changed from this
-	for i = 1, 16, 1 do
-		if (fs.exists(tostring(i))) then
-			file = fs.open(tostring(i), "r")
-			gateData = textutils.unserialize(file.readAll())
-			file.close()
-			found = false
-			name = ""
-			for k, v in pairs(gateData) do
-				if k == "address" then
-					if v == sg.remoteAddress() then
-						found = true
-					end
-				elseif k == "name" then
-					name = v
-				end
-			end
-			if found == true then
-				mon.setCursorPos((x/2+1) - string.len(name)/2, y/2)
-				mon.write(name)
-				ff = true
-				break
-			end
-		end
-	end
-	if (not ff) then
-		if (fs.exists("secList")) then
-			file = fs.open("secList", "r")
-			secInfo = textutils.unserialize(file.readAll())
-			file.close()
-			if string.len(textutils.serialize(secInfo)) > 7 then
-				for k, v in pairs(secInfo) do
-					if v.address == sg.remoteAddress() then
-						mon.setCursorPos((x/2+1) - string.len(v.name)/2, y/2)
-						mon.write(v.name)
-						ff = true
-						break
-					end
-				end
-			end
+	local gate = utils.getTableFromArray(bookmarks, sg.remoteAddress(), getAddress)
+	local found = gate ~= nil
+	if (gate ~= nil) then
+		mon.setCursorPos((x / 2 + 1) - string.len(gate.name) / 2, y / 2)
+		mon.write(name)
+	else
+		gate = utils.getTableFromArray(security, sg.remoteAddress(), getAddress)
+		if (gate ~= nil) then
+			mon.setCursorPos((x / 2 + 1) - string.len(gate.name) / 2, y / 2)
+			mon.write(v.name)
 		end
 	end  -- till this
 end
 
 function drawHistoryButton()
-  mon.setBackgroundColor(colors.lightGray)
-  mon.setTextColor(colors.black)
-  s = " HISTORY "
-  i = 1
-  for  yc = y/3-1, y/3*2 +1 do
-    char = string.sub(s, i, i)
-	mon.setCursorPos(x-7, yc)
-	mon.write(" "..char.." ")
-	i = i+1
-  end
+	mon.setBackgroundColor(colors.lightGray)
+	mon.setTextColor(colors.black)
+	local s = " HISTORY "
+	local i = 1
+	for yc = y / 3 - 1, y / 3 * 2 + 1 do
+		localchar_ = string.sub(s, i, i)
+		mon.setCursorPos(x - 7, yc)
+		mon.write(" " .. char_ .. " ")
+		i = i + 1
+	end
 end
 
 function addToHistory(address)
