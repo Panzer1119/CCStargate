@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 09:13 PM
+  Date: Edited 26 Jun 2018 - 10:28 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -143,7 +143,28 @@ function getAddress(entry)
 	end
 end
 
+function getAddressShort(entry)
+	if (entry ~= nil and string.len(entry.address) >= 7) then
+		return string.sub(entry.address, 1, 7)
+	else
+		return nil
+	end
+end
+
 -- Functions for searching an array for a table END
+
+function getGateByAddress(gates, address)
+	if (string.len(address) == 7) then
+		return utils.getTableFromArray(gates, address, getAddressShort)
+	elseif (string.len(address) == 9) then
+		local gate = utils.getTableFromArray(gates, address, getAddress)
+		if (gate == nil) then
+			gate = utils.getTableFromArray(gates, string.sub(address, 1, 7), getAddressShort)
+		end
+		return gate
+	end
+	return nil
+end
 
 function alarmSet(state)
 	if (settings.alarmOutputSides ~= nil and #settings.alarmOutputSides >= 1) then
@@ -337,6 +358,8 @@ function drawSgStatus(status) -- draws stargate status
 		mon.setBackgroundColor(colors.black)
 		if (status == "Connected") then
 			mon.setTextColor(colors.lightBlue)
+			drawRemoteAddress()
+			sg.sendMessage("irisState")
 		elseif (status == "Dialling") then
 			mon.setTextColor(colors.orange)
 		else
@@ -348,7 +371,7 @@ function drawSgStatus(status) -- draws stargate status
 		mon.setCursorPos((x / 2 + 1) - (xc / 2 - 1), y / 2 + 2)
 		mon.write(status)
 		if (even) then
-			mon.write(".")
+			mon.write(" ")
 		end
 	end
 end
@@ -592,7 +615,7 @@ function updateBookmarksPage()
 				mon.write(bookmark.address)
 				]]--
 				mon.setCursorPos(x / 2 + 8, i)
-				if (ok and string.len(bookmark.address) == 9) then
+				if (ok) then
 					if (energyAvailable >= energyNeeded) then
 						mon.setTextColor(colors.green)
 					else
@@ -661,7 +684,7 @@ function drawBookmarksPage()
 			mon.setCursorPos(x / 2 - 3, i)
 			mon.write(bookmark.address)
 			mon.setCursorPos(x/2 + 8, i)
-			if (ok and string.len(bookmark.address) == 9) then
+			if (ok) then
 				if (energyAvailable >= energyNeeded) then
 					mon.setTextColor(colors.green)
 				else
@@ -693,7 +716,7 @@ function drawRemoteIris()
 	mon.setBackgroundColor(colors.black)
 	local x, y = mon.getSize()
 	mon.setCursorPos(x / 2 - 1, y / 2 + 4)
-	mon.write("IRIS.")
+	mon.write("IRIS ")
 end
 
 function inputPage()
@@ -725,24 +748,26 @@ function inputPage()
 end
 
 function drawRemoteAddress()
-	mon.setBackgroundColor(colors.black)
-	local x, y = mon.getSize()
-	mon.setCursorPos((x / 2 + 1) - string.len(sg.remoteAddress()) / 2, y / 2 - 2)
-	mon.write(sg.remoteAddress())
-	loadBookmarks()
-	local gate = utils.getTableFromArray(bookmarks, sg.remoteAddress(), getAddress)
-	local found = gate ~= nil
-	if (gate ~= nil) then
-		mon.setCursorPos((x / 2 + 1) - string.len(gate.name) / 2, y / 2)
-		mon.write(name)
-	else
-		loadSecurity()
-		gate = utils.getTableFromArray(security, sg.remoteAddress(), getAddress)
+	local address = sg.remoteAddress()
+	if (address ~= nil and address ~= "") then
+		mon.setBackgroundColor(colors.black)
+		local x, y = mon.getSize()
+		mon.setCursorPos((x / 2 + 1) - string.len(address) / 2, y / 2 - 2)
+		mon.write(address)
+		loadBookmarks()
+		local gate = getGateByAddress(bookmarks, address)
 		if (gate ~= nil) then
 			mon.setCursorPos((x / 2 + 1) - string.len(gate.name) / 2, y / 2)
-			mon.write(v.name)
+			mon.write(gate.name)
+		else
+			loadSecurity()
+			gate = getGateByAddress(security, address)
+			if (gate ~= nil) then
+				mon.setCursorPos((x / 2 + 1) - string.len(gate.name) / 2, y / 2)
+				mon.write(gate.name)
+			end
 		end
-	end  -- till this
+	end
 end
 
 function drawHistoryButton()
@@ -1102,7 +1127,7 @@ while true do
 		drawRemoteAddress()
 		alarmSet(true)
 		loadSecurity()
-		local gate = utils.getTableFromArray(security, param2, getAddress)
+		local gate = getGateByAddress(security, param2)
 		if (gate ~= nil) then
 			if (string.sub(gate.address, 1, 7) == param2 or gate.address == param2) then
 				if (gate.mode == security_allow) then
@@ -1135,13 +1160,16 @@ while true do
 		end
 		addToHistory(param2, true)
 	elseif (event == "sgMessageReceived") then
-		if (param2 == "Open") then
+		--print("Message from " .. sg.remoteAddress() .. ": " .. param2)
+		if (param2 == "Open" or param2 == "Opened") then
 			mon.setTextColor(colors.lime)
 			drawRemoteIris()
 		elseif (param2 == "Closed") then
 			mon.setTextColor(colors.red)
 			drawRemoteIris()
-		end	  
+		elseif (param2 == "irisState") then
+			sg.sendMessage(irisState)
+		end
 	elseif (event == "sgStargateStateChange" or event == "sgChevronEngaged") then
 		drawDial()
 		drawPowerBar()
