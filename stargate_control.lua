@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 01:27 PM
+  Date: Edited 26 Jun 2018 - 01:54 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -23,6 +23,8 @@
 -- Shows energy costs for all addresses in the dial list and if you have enough to dial the address
 -- Changed energy unit from SU to RF
 
+os.loadAPI("lib/utils.lua")
+
 mon = peripheral.find("monitor")
 sg = peripheral.find("stargate")
 
@@ -32,120 +34,158 @@ maxEng = 50000
 dialling = {}
 menu = ""
 
-local function alarmSet(set)
-  rs.setOutput("left", set)
-  return 
+bookmarks = {}
+security = {}
+settings = {}
+
+filename_bookmarks = "stargate/bookmarks.lon"
+filename_security = "stargate/security.lon"
+filename_settings = "stargate/settings.lon"
+
+function loadBookmarks()
+	bookmarks = utils.readTableFromFile(filename_bookmarks)
+end
+
+function loadSecurity()
+	security = utils.readTableFromFile(filename_security)
+end
+
+function loadSettings()
+	if (not fs.exists(filename_settings) then
+		utils.writeTableToFile(filename_settings, {irisOnIncomingDial = "NONE", alarmOutputSides = {}})
+	end
+	settings = utils.readTableFromFile(filename_settings)
+end
+
+function loadAll()
+	loadBookmarks()
+	loadSecurity()
+	loadSettings()
+end
+
+function alarmSet(set)
+	if (settings.alarmOutputSides ~= and #settings.alarmOutputSides >= 1) then
+		if (set) then
+			for i = 1, #settings.alarmOutputSides do
+				rs.setOutput(settings.alarmOutputSides[i], true)
+			end
+		else
+			utils.resetAllRedstoneOutputs()
+		end
+	else 
+		utils.resetAllRedstoneOutputs()
+	end
 end
   
 function drawPowerBar() -- checks power levels and writes power bar to monitor
-  x,y = mon.getSize()
-  engPercent = (sg.energyAvailable() / (maxEng +1)) * 100 -- returns percent
-  for i = y, (y - y / 100 * engPercent), -1 do
-    mon.setCursorPos(x-2,i)
-    if i > y/4*3 then 
-      mon.setBackgroundColor(colors.red)
-	  mon.setTextColor(colors.red)
-    elseif i > y/2 then
-      mon.setBackgroundColor(colors.orange)
-	  mon.setTextColor(colors.orange)
-    elseif i > y/4 then
-      mon.setBackgroundColor(colors.green)
-	  mon.setTextColor(colors.green)
-    else
-      mon.setBackgroundColor(colors.lime)
-	  mon.setTextColor(colors.lime)
-    end
-    mon.write("  ")
-  end
-  mon.setBackgroundColor(colors.black)
-  mon.setCursorPos(x-11,y)
-  mon.write(math.floor(sg.energyAvailable() * 80 / 1000).."k RF ")
+	local x, y = mon.getSize()
+	local engPercent = (sg.energyAvailable() / (maxEng + 1)) * 100 -- returns percent
+	for i = y, (y - y / 100 * engPercent), -1 do
+		mon.setCursorPos(x - 2,i)
+		if i > y / 4 * 3 then 
+			mon.setBackgroundColor(colors.red)
+			mon.setTextColor(colors.red)
+		elseif i > y / 2 then
+			mon.setBackgroundColor(colors.orange)
+			mon.setTextColor(colors.orange)
+		elseif i > y / 4 then
+			mon.setBackgroundColor(colors.green)
+			mon.setTextColor(colors.green)
+		else
+			mon.setBackgroundColor(colors.lime)
+			mon.setTextColor(colors.lime)
+		end
+		mon.write("  ")
+	end
+	mon.setBackgroundColor(colors.black)
+	mon.setCursorPos(x - 11,y)
+	mon.write(math.floor(sg.energyAvailable() * 80 / 1000) .. "k RF ")
 end
 
 function drawTime()
-  x,y = mon.getSize()
-  mon.setCursorPos(1, 1)
-  mon.setBackgroundColor(colors.black)
-  mon.setTextColor(colors.white)
-  time_test = textutils.formatTime(os.time(), true)
-  if(string.len(time_test) == 4) then
-	time_test = "0"..time_test
-  end
-  mon.write(time_test)
+	local x, y = mon.getSize()
+	mon.setCursorPos(1, 1)
+	mon.setBackgroundColor(colors.black)
+	mon.setTextColor(colors.white)
+	local time_test = textutils.formatTime(os.time(), true)
+	if (string.len(time_test) == 4) then
+		time_test = "0" .. time_test
+	end
+	mon.write(time_test)
 end
 
 function drawChevrons() --draws cheyvrons on the screen
-  x,y = mon.getSize()
-  chevX1 = x/3
-  chevX2 = x/3*2+1
-  chevY1 = y/3-2
-  chevY2 = y/3*2 +2
-  mon.setBackgroundColor(colors.black)
-  for yc = chevY1-2, chevY2-2 do
-    for xc = chevX1-2, chevX2-2 do
-	  mon.setCursorPos(xc, yc)
-	  mon.write(" ")
+	local x, y = mon.getSize()
+	local chevX1 = x / 3
+	local chevX2 = x / 3 * 2 + 1
+	local chevY1 = y / 3 - 2
+	local chevY2 = y / 3 * 2 + 2
+	mon.setBackgroundColor(colors.black)
+	for yc = chevY1 - 2, chevY2 - 2 do
+		for xc = chevX1 - 2, chevX2 - 2 do
+			mon.setCursorPos(xc, yc)
+			mon.write(" ")
+		end
 	end
-  end
-  mon.setBackgroundColor(colors.lightGray)
-  for i = chevX1+2, chevX2-2 do
-    mon.setCursorPos(i,chevY1)
-	mon.write(" ")
-  end
-  for i = chevX1+2, chevX2-2 do
-    mon.setCursorPos(i,chevY2)
-	mon.write(" ")
-  end
-  for i = chevY1+2, chevY2-2 do
-    mon.setCursorPos(chevX1,i)
-	mon.write(" ")
-  end
-  for i = chevY1+2, chevY2-2 do
-    mon.setCursorPos(chevX2, i)
-	mon.write(" ")
-  end
-  chev1pos = {chevX1, chevY2 }
-  mon.setBackgroundColor(colors.gray)
-  mon.setTextColor(colors.black)
-  mon.setCursorPos(math.floor(chev1pos[1]), math.floor(chev1pos[2])-1)
-  mon.write(" > ")
-  chev2pos = {chevX1, chevY1 + ((chevY2 - chevY1) / 2) }
-  mon.setCursorPos(math.floor(chev2pos[1]-1), math.floor(chev2pos[2]))
-  mon.write(" > ")
-  chev3pos = {chevX1, chevY1 }
-  mon.setCursorPos(math.floor(chev3pos[1]), math.floor(chev3pos[2]+1))
-  mon.write(" > ")
-  chev4pos = {chevX1 + ((chevX2 - chevX1) / 2), chevY1 }
-  mon.setCursorPos(math.floor(chev4pos[1]-1), math.floor(chev4pos[2]))
-  mon.write(" V ")
-  chev5pos = {chevX2, chevY1 }
-  mon.setCursorPos(math.floor(chev5pos[1]-2), math.floor(chev5pos[2])+1)
-  mon.write(" < ")
-  chev6pos = {chevX2, chevY1 + ((chevY2 - chevY1) / 2) }
-  mon.setCursorPos(math.floor(chev6pos[1]-1), math.floor(chev6pos[2]))
-  mon.write(" < ")
-  chev7pos = {chevX2, chevY2 }
-  mon.setCursorPos(math.floor(chev7pos[1]-2), math.floor(chev7pos[2]-1))
-  mon.write(" < ")
-  --[[ old positions
-  chev8pos = {chevX1 + ((chevX2 - chevX1) /2), chevY2 }
-  mon.setCursorPos(math.floor(chev8pos[1]-1), math.floor(chev8pos[2]))
-  mon.write("   ")
-  ]]--
-  chev8pos = {chevX1 + ((chevX2 - chevX1) /2) + 2, chevY2 }
-  mon.setCursorPos(math.floor(chev8pos[1]-1), math.floor(chev8pos[2]))
-  mon.write(" ^ ")
-  chev9pos = {chevX1 + ((chevX2 - chevX1) /2) - 2, chevY2 }
-  mon.setCursorPos(math.floor(chev9pos[1]-1), math.floor(chev9pos[2]))
-  mon.write(" ^ ")
---  chev9pos = {chevX1 + ((chevX2 - chevX1) /2), chevY2 }
---  mon.setCursorPos(math.floor(chev8pos[1]-1), chevY1 + ((chevY2 - chevY1) / 2))
---  mon.write(" 9 ")
-  mon.setBackgroundColor(colors.black)
-  mon.setCursorPos(x/2 - 4, y/2 - 1)
-  mon.write("           ")
-  mon.setCursorPos(x/2-1, y/2+4)
-  mon.write("     ")
+	mon.setBackgroundColor(colors.lightGray)
+	for i = chevX1 + 2, chevX2 - 2 do
+		mon.setCursorPos(i, chevY1)
+		mon.write(" ")
+	end
+	for i = chevX1 + 2, chevX2 - 2 do
+		mon.setCursorPos(i, chevY2)
+		mon.write(" ")
+	end
+	for i = chevY1 + 2, chevY2 - 2 do
+		mon.setCursorPos(chevX1, i)
+		mon.write(" ")
+	end
+	for i = chevY1 + 2, chevY2 - 2 do
+		mon.setCursorPos(chevX2, i)
+		mon.write(" ")
+	end
+	local chev1pos = {chevX1, chevY2}
+	mon.setBackgroundColor(colors.gray)
+	mon.setTextColor(colors.black)
+	mon.setCursorPos(math.floor(chev1pos[1]), math.floor(chev1pos[2]) - 1)
+	mon.write(" > ")
+	local chev2pos = {chevX1, chevY1 + ((chevY2 - chevY1) / 2)}
+	mon.setCursorPos(math.floor(chev2pos[1] - 1), math.floor(chev2pos[2]))
+	mon.write(" > ")
+	local chev3pos = {chevX1, chevY1}
+	mon.setCursorPos(math.floor(chev3pos[1]), math.floor(chev3pos[2] + 1))
+	mon.write(" > ")
+	local chev4pos = {chevX1 + ((chevX2 - chevX1) / 2), chevY1}
+	mon.setCursorPos(math.floor(chev4pos[1] - 1), math.floor(chev4pos[2]))
+	mon.write(" V ")
+	local chev5pos = {chevX2, chevY1}
+	mon.setCursorPos(math.floor(chev5pos[1] - 2), math.floor(chev5pos[2]) + 1)
+	mon.write(" < ")
+	local chev6pos = {chevX2, chevY1 + ((chevY2 - chevY1) / 2)}
+	mon.setCursorPos(math.floor(chev6pos[1] - 1), math.floor(chev6pos[2]))
+	mon.write(" < ")
+	local chev7pos = {chevX2, chevY2}
+	mon.setCursorPos(math.floor(chev7pos[1] - 2), math.floor(chev7pos[2] - 1))
+	mon.write(" < ")
+	--[[ -- old positions
+	chev8pos = {chevX1 + ((chevX2 - chevX1) /2), chevY2 }
+	mon.setCursorPos(math.floor(chev8pos[1]-1), math.floor(chev8pos[2]))
+	mon.write("   ")
+	]]--
+	local chev8pos = {chevX1 + ((chevX2 - chevX1) / 2) + 2, chevY2}
+	mon.setCursorPos(math.floor(chev8pos[1] - 1), math.floor(chev8pos[2]))
+	mon.write(" ^ ")
+	local chev9pos = {chevX1 + ((chevX2 - chevX1) / 2) - 2, chevY2}
+	mon.setCursorPos(math.floor(chev9pos[1] - 1), math.floor(chev9pos[2]))
+	mon.write(" ^ ")
+	--  local chev9pos = {chevX1 + ((chevX2 - chevX1) /2), chevY2 }
+	--  mon.setCursorPos(math.floor(chev8pos[1]-1), chevY1 + ((chevY2 - chevY1) / 2))
+	--  mon.write(" 9 ")
+	mon.setBackgroundColor(colors.black)
+	mon.setCursorPos(x / 2 - 4, y / 2 - 1)
+	mon.write("           ")
+	mon.setCursorPos(x / 2 - 1, y / 2 + 4)
+	mon.write("     ")
 end
 
 function drawChev( chevInfo )
@@ -193,9 +233,8 @@ function drawChev( chevInfo )
     --mon.setCursorPos(math.floor(chev9pos[1]-1), chevY1 + ((chevY2 - chevY1) / 2))
     mon.setCursorPos(math.floor(chev9pos[1]-1), math.floor(chev9pos[2]))
     mon.write(" "..chevInfo[2].." ")
-  mon.setBackgroundColor(colors.black)
-end
-
+	mon.setBackgroundColor(colors.black)
+  end
 end
 
 function drawSgStatus(status) -- draws stargate status
@@ -354,10 +393,10 @@ function drawSecurityPageTop() --draws the top of the security menu, all the add
 	mon.setCursorPos(x/2-4, yc)
 	mon.write("Add Address")
   end
-  if fs.exists("secList") then
-    file = fs.open("secList","r")
-	secInfo = textutils.unserialize(file.readAll())
-	file.close()
+  loadSecurity()
+  
+  
+  
 	if string.len(textutils.serialize(secInfo)) > 7 then
     for k,v in pairs(secInfo) do
 	  mon.setCursorPos(1,i)
@@ -388,7 +427,6 @@ function drawSecurityPageTop() --draws the top of the security menu, all the add
 	    mon.setBackgroundColor(colors.red)
 		mon.setTextColor(colors.black)
 	    mon.write("X")
-	end
 	end
   end 
   mon.setBackgroundColor(colors.black)
