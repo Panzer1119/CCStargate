@@ -42,6 +42,10 @@ filename_bookmarks = "stargate/bookmarks.lon"
 filename_security = "stargate/security.lon"
 filename_settings = "stargate/settings.lon"
 
+security_allow = "ALLOW"
+security_deny = "DENY"
+security_none = "NONE"
+
 function loadBookmarks()
 	bookmarks = utils.readTableFromFile(filename_bookmarks)
 end
@@ -52,7 +56,7 @@ end
 
 function loadSettings()
 	if (not fs.exists(filename_settings) then
-		utils.writeTableToFile(filename_settings, {irisOnIncomingDial = "NONE", alarmOutputSides = {}})
+		utils.writeTableToFile(filename_settings, {irisOnIncomingDial = security_none, alarmOutputSides = {}})
 	end
 	settings = utils.readTableFromFile(filename_settings)
 end
@@ -410,13 +414,13 @@ function drawSecurityPageTop() --draws the top of the security menu, all the add
 			mon.setCursorPos(x / 2 - string.len(v.address) / 2 + 1, k)
 			mon.write(v.address)
 			mon.setCursorPos(x - 7, k)
-			if (v.mode == "ALLOW") then
+			if (v.mode == security_allow) then
 				mon.setBackgroundColor(colors.white)
 				mon.setTextColor(colors.black)
-			elseif (v.mode == "DENY") then
+			elseif (v.mode == security_deny) then
 				mon.setBackgroundColor(colors.black)
 				mon.setTextColor(colors.white)
-			elseif (v.mode == "NONE") then
+			elseif (v.mode == security_none) then
 				mon.setBackgroundColor(colors.gray)
 				mon.setTextColor(colors.white)
 			end
@@ -431,28 +435,31 @@ function drawSecurityPageTop() --draws the top of the security menu, all the add
 end
   
 function drawSecurityPageBottom(listType) -- draws the buttons at the bottom of the security page
-  for yc = y-2, y do
-    for xc = 1, x do
-      mon.setCursorPos(xc, yc)
-	  if listType == "BLACKLIST" then
-	    mon.setBackgroundColor(colors.black)
-	    mon.setTextColor(colors.white)
-      elseif listType == "WHITELIST" then
-	    mon.setBackgroundColor(colors.white)
-	    mon.setTextColor(colors.black)
-	  elseif listType == "NONE" then
-	    mon.setBackgroundColor(colors.gray)
-	    mon.setTextColor(colors.white)
-	  end
-	  mon.write(" ")
+	local s = listType
+	for yc = y - 2, y do
+		for xc = 1, x do
+			mon.setCursorPos(xc, yc)
+			if (listType == security_deny) then
+				mon.setBackgroundColor(colors.black)
+				mon.setTextColor(colors.white)
+				s = listType .. " OTHER"
+			elseif (listType == security_allow) then
+				mon.setBackgroundColor(colors.white)
+				mon.setTextColor(colors.black)
+				s = listType .. " OTHER"
+			elseif (listType == security_none) then
+				mon.setBackgroundColor(colors.gray)
+				mon.setTextColor(colors.white)
+			end
+			mon.write(" ")
+		end
 	end
-  end
-  mon.setCursorPos((x/2 - tonumber(string.len(listType)/2)+1), y-1)
-  mon.write(listType)
-  --mon.write("DEFENSE")
-  mon.setCursorPos(x-5, y-1)
-  mon.write("BACK")
-  mon.setBackgroundColor(colors.black)
+	mon.setCursorPos((x / 2 - tonumber(string.len(s) / 2) + 1), y - 1)
+	mon.write(s)
+	--mon.write("DEFENSE")
+	mon.setCursorPos(x - 5, y - 1)
+	mon.write("BACK")
+	mon.setBackgroundColor(colors.black)
 end  
 
 function drawHome() -- draws the home screen
@@ -647,7 +654,7 @@ function inputPage(type)
   print("           ")
   term.setCursorPos(x/2 - 5, y/2)
   addressInput = string.upper(string.gsub(read(), "-", "")) --Changed this
-  newGate ={name = nameInput, address = addressInput, mode = "NONE"}
+  newGate ={name = nameInput, address = addressInput, mode = security_none}
   term.redirect(term.native())
   return newGate
 end
@@ -812,7 +819,7 @@ function historyInputPage(address)
   term.setCursorPos(x/2 - 4, y/2)
   nameInput = read()
   addressInput = "nil"
-  newGate ={name = nameInput, address = address, mode = "NONE"}
+  newGate ={name = nameInput, address = address, mode = security_none}
   term.redirect(term.native())
   term.clear()
   term.setCursorPos(1,1)
@@ -831,7 +838,7 @@ function update()
   elseif menu == "security" then
 	drawSecurityPageTop()
 	drawSecurityPageBottom(currentSec)
-	--drawSecurityPageBottom("BLACKLIST")
+	--drawSecurityPageBottom(security_deny)
   end
 end
 
@@ -852,7 +859,7 @@ if fs.exists("currentSec") then -- checks to see if there's list of gates stored
   currentSec = file.readAll()
   file.close()
 else
-  currentSec = "NONE"
+  currentSec = security_none
 end
 mon.setTextScale(1)
 drawHome()
@@ -891,7 +898,7 @@ while true do
       if sOK then
 	  drawSecurityPageTop()
 	  drawSecurityPageBottom(currentSec)
-	  --drawSecurityPageBottom("BLACKLIST")
+	  --drawSecurityPageBottom(security_deny)
 	  while true do
 	    event, param1, param2, param3 = os.pullEvent()
 		if event == "timer" and param1 == timeout then
@@ -902,13 +909,13 @@ while true do
 		    if param2 >= x-8 then -- "back" button has been pushed, returns user to home menu
 		      drawHome()
 			  break
-	        elseif param2 < x-6 then -- Click has changed the security type, cycles through "BLACKLIST", "WHITELIST", "NONE"
-		      if currentSec == "BLACKLIST" then
-			    currentSec = "WHITELIST"
-			  elseif currentSec == "WHITELIST" then
-			    currentSec = "NONE"			
-			  elseif currentSec == "NONE" then
-			      currentSec = "BLACKLIST"
+	        elseif param2 < x-6 then -- Click has changed the security type, cycles through "ALLOW", "DENY", "NONE"
+		      if currentSec == security_deny then
+			    currentSec = security_allow
+			  elseif currentSec == security_allow then
+			    currentSec = security_none			
+			  elseif currentSec == security_none then
+			      currentSec = security_deny
 			  end
 			  file = fs.open("currentSec", "w")
 			  file.write(currentSec)
@@ -929,12 +936,12 @@ while true do
 			  file.close()
 			  for k, v in pairs(secList) do
 				if k == param3 then
-					if v.mode == "ALLOW" then
-						v.mode = "DENY"
-					elseif v.mode == "DENY" then
-						v.mode = "NONE"
-					elseif v.mode == "NONE" then
-						v.mode = "ALLOW"
+					if v.mode == security_allow then
+						v.mode = security_deny
+					elseif v.mode == security_deny then
+						v.mode = security_none
+					elseif v.mode == security_none then
+						v.mode = security_allow
 					end
 				end
 			  end
@@ -943,7 +950,7 @@ while true do
 			  file.close()
 			  drawSecurityPageTop()
 			  drawSecurityPageBottom(currentSec)
-			  --drawSecurityPageBottom("BLACKLIST")
+			  --drawSecurityPageBottom(security_deny)
 		  elseif param3 < y - 2 then -- check if empty, if so add new entry	  
             if fs.exists("secList") == false then
 			  secList = {}
@@ -962,7 +969,7 @@ while true do
 			end
 			drawSecurityPageTop()
 	        drawSecurityPageBottom(currentSec)
-			--drawSecurityPageBottom("BLACKLIST")
+			--drawSecurityPageBottom(security_deny)
 		  end
 	    elseif not event == timer then -- if an event that isn't a users touch happens the screen will return to the home screen (in case of incoming connection)
 	      drawHome()
@@ -1125,21 +1132,21 @@ while true do
 	  for k,v in pairs(secList) do
 	    address = v.address
 	    if string.sub(v.address,1,7) == param2 or v.address == param2 then
-			if v.mode == "ALLOW" then
+			if v.mode == security_allow then
 				sg.openIris()
 				drawIris(false)
-			elseif v.mode == "DENY" then
+			elseif v.mode == security_deny then
 				sg.closeIris()
 				drawIris(true)
-			elseif v.mode == "NONE" then
+			elseif v.mode == security_none then
 				--sg.openIris()
 				--drawIris(false)
 			end
 	      --[[
-		  if currentSec == "BLACKLIST" then
+		  if currentSec == security_deny then
 		    sg.closeIris()
 		    drawIris(true)
-		  elseif currentSec == "WHITELIST" then
+		  elseif currentSec == security_allow then
 		      sg.openIris()
 			  drawIris(false)
 		  else
@@ -1151,19 +1158,19 @@ while true do
 	    end
 	  end
 	  if found == false then
-		  if currentSec == "BLACKLIST" then
+		  if currentSec == security_deny then
 			sg.closeIris()
 			drawIris(true)
-		  elseif currentSec == "WHITELIST" then
+		  elseif currentSec == security_allow then
 			sg.openIris()
 			drawIris(false)
 		  end
 	  end
 	else
-	  if currentSec == "BLACKLIST" then
+	  if currentSec == security_deny then
 		sg.closeIris()
 		drawIris(true)
-	  elseif currentSec == "WHITELIST" then
+	  elseif currentSec == security_allow then
 	    sg.openIris()
 	    drawIris(false)
 	  end
