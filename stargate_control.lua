@@ -67,6 +67,14 @@ function loadAll()
 	loadSettings()
 end
 
+function getId(entry)
+	if (entry ~= nil) then
+		return entry.id
+	else
+		return nil
+	end
+end
+
 function alarmSet(state)
 	if (settings.alarmOutputSides ~= and #settings.alarmOutputSides >= 1) then
 		if (state) then
@@ -463,93 +471,92 @@ function drawSecurityPageBottom(listType) -- draws the buttons at the bottom of 
 end  
 
 function drawHome() -- draws the home screen
-  menu = "main"
-  mon.setBackgroundColor(colors.black)
-  x,y = mon.getSize()
-  mon.clear()
-  mon.setCursorPos(1,y-1)
-  mon.setTextColor(colors.gray)
-  mon.setBackgroundColor(colors.black)
-  mon.write("thatParadox")
-  mon.setCursorPos(1,y)
-  mon.setTextColor(colors.gray)
-  mon.setBackgroundColor(colors.black)
-  mon.write("Panzer1119")
-  drawTime()
-  drawPowerBar()
-  drawChevrons()
-  status, int = sg.stargateState()
-  drawSgStatus(tostring(status))
-  drawHistoryButton()
-  if sg.irisState()  == "Open" then
-    drawIris(false)
-  else
-    drawIris(true)
-  end
-  drawLocalAddress()
-  securityButton()
-  drawDial()
-  mon.setCursorBlink(false)
-  drawTerm()
+	menu = "main"
+	mon.setBackgroundColor(colors.black)
+	local x, y = mon.getSize()
+	mon.clear()
+	mon.setCursorPos(1, y - 1)
+	mon.setTextColor(colors.gray)
+	mon.setBackgroundColor(colors.black)
+	mon.write("Panzer1119")
+	mon.setCursorPos(1, y)
+	mon.setTextColor(colors.gray)
+	mon.setBackgroundColor(colors.black)
+	mon.write("thatParadox")
+	drawTime()
+	drawPowerBar()
+	drawChevrons()
+	local status, int = sg.stargateState()
+	drawSgStatus(tostring(status))
+	drawHistoryButton()
+	if (sg.irisState()  == "Open") then
+		drawIris(false)
+	else
+		drawIris(true)
+	end
+	drawLocalAddress()
+	securityButton()
+	drawDial()
+	mon.setCursorBlink(false)
+	drawTerm()
 end
 
 function updateBookmarksPage()
-  if menu == "dial" then
-	  x,y = mon.getSize()
-	  energyAvailable = sg.energyAvailable()
-	  for i= 1,y do
-		if i%2 == 1 then
-		  mon.setBackgroundColor(colors.lightBlue)
-		else
-		  mon.setBackgroundColor(colors.lightGray)
-		end
-		if fs.exists(tostring(i)) then
-		  file = fs.open(tostring(i),"r")
-		  bookmark = textutils.unserialize(file.readAll())
-		  file.close()
-		  mon.setCursorPos(1,i)
-		  for k,v in pairs(bookmark) do
-			if k == "name" then	
-			  mon.setTextColor(colors.black)	
-			  ok, energyNeeded = pcall(sg.energyToDial, bookmark.address)
-			  if energyNeeded == nil then
-				ok = false
-			  end
-			  --[[
-			  mon.write(v)
-			  mon.setCursorPos(x/2 - 3, i)
-			  mon.write(bookmark.address)]]--
-			  mon.setCursorPos(x/2 + 8, i)
-			  if ok and string.len(bookmark.address) == 9 then
-				if energyAvailable >= energyNeeded then
-					mon.setTextColor(colors.green)
-				else
-					mon.setTextColor(colors.red)
-				end
-				mon.write(math.floor(energyNeeded * 80 / 1000).."k RF")
-			  else
-				mon.setCursorPos(x/2 + 10, i)
-				mon.setTextColor(colors.white)
-				mon.write("--")
-			  end
-			  --[[
-			  mon.setCursorPos(x,i)
-			  mon.setBackgroundColor(colors.red)
-			  mon.setTextColor(colors.black)
-			  mon.write("X")]]--
+	if (menu == "dial") then
+		local x, y = mon.getSize()
+		local energyAvailable = sg.energyAvailable()
+		loadBookmarks()
+		for i = 1, y do
+			if (i % 2 == 1) then
+				mon.setBackgroundColor(colors.lightBlue)
+			else
+				mon.setBackgroundColor(colors.lightGray)
 			end
-		  end
-		elseif i < y-2 then--[[
-		  mon.setTextColor(colors.black)
-		  for xc = 1,x do
-		    mon.setCursorPos(xc, i)
-		    mon.write(" ")
-		  end
-		  mon.setCursorPos(1, i)
-		  mon.write("Add Address")]]--
+			local bookmark = utils.getTableFromArray(bookmarks, i, getId)
+			if (bookmark ~= nil) then
+				mon.setCursorPos(1, i)
+				mon.setTextColor(colors.black)	
+				local ok, energyNeeded = pcall(sg.energyToDial, bookmark.address)
+				if (energyNeeded == nil) then
+					ok = false
+				end
+				----[[
+				mon.write(bookmark.name)
+				mon.setCursorPos(x / 2 - 3, i)
+				mon.write(bookmark.address)
+				--]]--
+				mon.setCursorPos(x / 2 + 8, i)
+				if (ok and string.len(bookmark.address) == 9) then
+					if (energyAvailable >= energyNeeded) then
+						mon.setTextColor(colors.green)
+					else
+						mon.setTextColor(colors.red)
+					end
+					mon.write(math.floor(energyNeeded * 80 / 1000) .. "k RF")
+				else
+					mon.setCursorPos(x / 2 + 10, i)
+					mon.setTextColor(colors.white)
+					mon.write("--")
+				end
+				--[[
+				mon.setCursorPos(x, i)
+				mon.setBackgroundColor(colors.red)
+				mon.setTextColor(colors.black)
+				mon.write("X")
+				]]--
+			elseif (i < y - 2) then
+				--[[
+				mon.setTextColor(colors.black)
+				for xc = 1,x do
+					mon.setCursorPos(xc, i)
+					mon.write(" ")
+				end
+				mon.setCursorPos(1, i)
+				mon.write("Add Address")
+				]]--
+			end
 		end
-	  end
-  end
+	end
 end
 
 function drawBookmarksPage()
