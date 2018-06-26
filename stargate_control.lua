@@ -63,9 +63,9 @@ function loadAll()
 	loadSettings()
 end
 
-function alarmSet(status)
+function alarmSet(state)
 	if (settings.alarmOutputSides ~= and #settings.alarmOutputSides >= 1) then
-		if (status) then
+		if (state) then
 			for i = 1, #settings.alarmOutputSides do
 				rs.setOutput(settings.alarmOutputSides[i], true)
 			end
@@ -195,40 +195,40 @@ function drawChev(chevInfo)
 	local chevX2 = x / 3 * 2 + 1
 	local chevY1 = y / 3 - 2
 	local chevY2 = y / 3 * 2 + 2
-	if chevInfo[1] == 1 then
+	if (chevInfo[1] == 1) then
 		local chev1pos = {chevX1, chevY2}
 		mon.setBackgroundColor(colors.gray)
 		mon.setCursorPos(math.floor(chev1pos[1]), math.floor(chev1pos[2]) - 1)
 		mon.write(" " .. chevInfo[2] .. " ")
-	elseif chevInfo[1] == 2 then
+	elseif (chevInfo[1] == 2) then
 		local chev2pos = {chevX1, chevY1 + ((chevY2 - chevY1) / 2)}
 		mon.setCursorPos(math.floor(chev2pos[1] - 1), math.floor(chev2pos[2]))
 		mon.write(" " .. chevInfo[2] .. " ")
-	elseif chevInfo[1] == 3 then
+	elseif (chevInfo[1] == 3) then
 		local chev3pos = {chevX1, chevY1}
 		mon.setCursorPos(math.floor(chev3pos[1]), math.floor(chev3pos[2] + 1))
 		mon.write(" " .. chevInfo[2] .. " ")
-	elseif chevInfo[1] == 4 then
+	elseif (chevInfo[1] == 4) then
 		local chev4pos = {chevX1 + ((chevX2 - chevX1) / 2), chevY1}
 		mon.setCursorPos(math.floor(chev4pos[1] - 1), math.floor(chev4pos[2]))
 		mon.write(" " .. chevInfo[2] .. " ")
-	elseif chevInfo[1] == 5 then
+	elseif (chevInfo[1] == 5) then
 		local chev5pos = {chevX2, chevY1}
 		mon.setCursorPos(math.floor(chev5pos[1] - 2), math.floor(chev5pos[2]) + 1)
 		mon.write(" " .. chevInfo[2] .. " ")
-	elseif chevInfo[1] == 6 then
+	elseif (chevInfo[1] == 6) then
 		local chev6pos = {chevX2, chevY1 + ((chevY2 - chevY1) / 2)}
 		mon.setCursorPos(math.floor(chev6pos[1] - 1), math.floor(chev6pos[2]))
 		mon.write(" " .. chevInfo[2] .. " ")
-	elseif chevInfo[1] == 7 then
+	elseif (chevInfo[1] == 7) then
 		local chev7pos = {chevX2, chevY2}
 		mon.setCursorPos(math.floor(chev7pos[1] - 2), math.floor(chev7pos[2] - 1))
 		mon.write(" " .. chevInfo[2] .. " ")
-	elseif chevInfo[1] == 8 then
+	elseif (chevInfo[1] == 8) then
 		local  chev8pos = {chevX1 + ((chevX2 - chevX1) / 2) + 2, chevY2}
 		mon.setCursorPos(math.floor(chev8pos[1] - 1), math.floor(chev8pos[2]))
 		mon.write(" " .. chevInfo[2] .. " ")
-	elseif chevInfo[1] == 9 then
+	elseif (chevInfo[1] == 9) then
 		local chev9pos = {chevX1 + ((chevX2 - chevX1) /2) - 2, chevY2}
 		--mon.setCursorPos(math.floor(chev9pos[1]-1), chevY1 + ((chevY2 - chevY1) / 2))
 		mon.setCursorPos(math.floor(chev9pos[1] - 1), math.floor(chev9pos[2]))
@@ -238,97 +238,98 @@ function drawChev(chevInfo)
 end
 
 function drawSgStatus(status) -- draws stargate status
-  if status ~= "Idle" then
-  term.setCursorPos(1,2)
-  write(status) --needed for sting length because sting.len() won't work with stargateStatus()
-  xc, yc = term.getCursorPos()
-  term.clear()
-  term.setCursorPos(1,2)
-  write("> ")
-  if xc%2 == 1 then
-    xc = xc+1
-	even = true
-  else
-    even = false
-  end
-  mon.setBackgroundColor(colors.black)
-  if status == "Connected" then
-    mon.setTextColor(colors.lightBlue)
-  elseif status == "Dialling" then
-    mon.setTextColor(colors.orange)
-  else
-    mon.setTextColor(colors.green)
-  end
-  x,y = mon.getSize()
-  mon.setCursorPos((x/2+1) - 6, y/2+2)
-  mon.write("            ")
-  mon.setCursorPos((x/2+1) - (xc/2-1), y/2+2)
-  mon.write(status)
-  if even == true then
-    mon.write(".")
-  end
-  end
+	if (status ~= "Idle") then
+		--term.setCursorPos(1, 2)
+		--write(status) --needed for sting length because string.len() won't work with stargateStatus()
+		--local xc, yc = term.getCursorPos()
+		local xc = string.len(status)
+		term.clear()
+		term.setCursorPos(1, 2)
+		write("> ")
+		if (xc % 2 == 1) then
+			xc = xc + 1
+			even = true
+		else
+			even = false
+		end
+		mon.setBackgroundColor(colors.black)
+		if (status == "Connected") then
+			mon.setTextColor(colors.lightBlue)
+		elseif (status == "Dialling") then
+			mon.setTextColor(colors.orange)
+		else
+			mon.setTextColor(colors.green)
+		end
+		local x, y = mon.getSize()
+		mon.setCursorPos((x / 2 + 1) - 6, y / 2 + 2)
+		mon.write("            ")
+		mon.setCursorPos((x / 2 + 1) - (xc / 2 - 1), y / 2 + 2)
+		mon.write(status)
+		if (even) then
+			mon.write(".")
+		end
+	end
 end
 
 function drawIris(state) --draws button to control the Iris
-  mon.setBackgroundColor(colors.lightGray)
-  --ok, result = pcall(sg.openIris)
-  if irisState == "Opened" then
-	ok, result = pcall(sg.openIris)
-  else 
-	ok, result = pcall(sg.closeIris)
-  end
-  if ok == false then
-    mon.setTextColor(colors.red)
-  elseif state == true then
-    sg.closeIris()
-    mon.setTextColor(colors.lime)
-  else
-	mon.setTextColor(colors.black)
-	sg.openIris()
-  end
-  s = "   IRIS   "
-  i = 1
-  for  yc = y/3-1, y/3*2 +1 do
-    char = string.sub(s, i, i)
-	mon.setCursorPos(6, yc)
-	mon.write(" "..char.." ")
-	i = i+1
-  end
-  if state == true then
-    mon.setTextColor(colors.lime)
-  else
-	mon.setTextColor(colors.black)
-  end
+	mon.setBackgroundColor(colors.lightGray)
+	--ok, result = pcall(sg.openIris)
+	if (irisState == "Opened") then
+		ok, result = pcall(sg.openIris)
+	else
+		ok, result = pcall(sg.closeIris)
+	end
+	if (not ok) then
+		mon.setTextColor(colors.red)
+	elseif (state) then
+		sg.closeIris()
+		mon.setTextColor(colors.lime)
+	else
+		mon.setTextColor(colors.black)
+		sg.openIris()
+	end
+	local s = "   IRIS   "
+	local i = 1
+	for  yc = y / 3 - 1, y / 3 * 2 + 1 do
+		local char_ = string.sub(s, i, i)
+		mon.setCursorPos(6, yc)
+		mon.write(" " .. char_ .. " ")
+		i = i + 1
+	end
+	if (state) then
+		mon.setTextColor(colors.lime)
+	else
+		mon.setTextColor(colors.black)
+	end
 end
 
 function drawLocalAddress() -- draws the address stargate being controlled 
-  x,y = mon.getSize()
-  mon.setBackgroundColor(colors.black)
-  mon.setTextColor(colors.lightGray)
-  mon.setCursorPos(x/2-7, 1)
-  mon.write("Stargate Address:")
-  mon.setCursorPos(x/2-3, 2)
-  mon.write(sg.localAddress())
+	local x, y = mon.getSize()
+	mon.setBackgroundColor(colors.black)
+	mon.setTextColor(colors.lightGray)
+	mon.setCursorPos(x / 2 - 7, 1)
+	mon.write("Stargate Address:")
+	mon.setCursorPos(x / 2 - 3, 2)
+	mon.write(sg.localAddress())
 end
 
 function drawDial() -- draws the button to access the dialing menu
-  x,y = mon.getSize()
-  state, int = sg.stargateState()
-  for yc = y-3, y-1 do
-    for xc = x/2-5, x/2 do
-	  if state == "Idle" then
-	    mon.setBackgroundColor(colors.lightGray)
-	  else
-	    mon.setBackgroundColor(colors.gray)
-	  end
-	  mon.setCursorPos(xc,yc)
-	  mon.write(" ")
+	local x, y = mon.getSize()
+	local state, int = sg.stargateState()
+	for yc = y - 3, y - 1 do
+		for xc = x / 2 - 5, x / 2 do
+			if (state == "Idle") then
+				mon.setBackgroundColor(colors.lightGray)
+			else
+				mon.setBackgroundColor(colors.gray)
+			end
+			mon.setCursorPos(xc, yc)
+			mon.write(" ")
+		end
 	end
-  end
-  mon.setCursorPos(x/2-4, y-2)
-  mon.setTextColor(colors.black)
-  mon.write("DIAL")
+	mon.setCursorPos(x / 2 - 4, y - 2)
+	mon.setTextColor(colors.black)
+	mon.write("DIAL")
 end
 
 function drawTerm() -- draws the button to terminate the stargate connection to another gate
