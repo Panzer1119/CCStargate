@@ -1,12 +1,17 @@
 --[[
   Author: Panzer1119
   
-  Date: Created 26 Jun 2018 - 04:04 PM
+  Date: Edited 26 Jun 2018 - 04:05 PM
   
-  Original Source: https://github.com/Panzer1119/CCUtils/blob/master/files.lon
+  Original Source: https://github.com/Panzer1119/CCStargate/blob/master/files.lon
   
-  Direct Download: https://raw.githubusercontent.com/Panzer1119/CCUtils/master/files.lon
+  Direct Download: https://raw.githubusercontent.com/Panzer1119/CCStargate/master/files.lon
 ]]--
 
 {
+	{
+		name = "stargate_control.lua",
+		path = "stargate_control.lua",
+		url = "https://raw.githubusercontent.com/Panzer1119/CCStargate/master/stargate_control.lua"
+	}
 }
