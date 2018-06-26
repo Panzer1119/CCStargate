@@ -333,104 +333,101 @@ function drawDial() -- draws the button to access the dialing menu
 end
 
 function drawTerm() -- draws the button to terminate the stargate connection to another gate
-  x,y = mon.getSize()
-  state, int = sg.stargateState()
-  for yc = y-3, y-1 do
-    for xc = x/2+2, x/2+7 do
-	  if state == "Connected" or state == "Connecting" or state == "Dialling" then
-	    mon.setBackgroundColor(colors.lightGray)
-	  else
-	    mon.setBackgroundColor(colors.gray)
-	  end
-	  mon.setCursorPos(xc,yc)
-	  mon.write(" ")
+	local x, y = mon.getSize()
+	local state, int = sg.stargateState()
+	for yc = y - 3, y - 1 do
+		for xc = x / 2 + 2, x / 2 + 7 do
+			if (state == "Connected" or state == "Connecting" or state == "Dialling") then
+				mon.setBackgroundColor(colors.lightGray)
+			else
+				mon.setBackgroundColor(colors.gray)
+			end
+			mon.setCursorPos(xc,yc)
+			mon.write(" ")
+		end
 	end
-  end
-  mon.setCursorPos(x/2+3, y-2)
-  mon.setTextColor(colors.black)
-  mon.write("TERM")
+	mon.setCursorPos(x / 2 + 3, y - 2)
+	mon.setTextColor(colors.black)
+	mon.write("TERM")
 end 
 
 function securityButton() -- draws the button to access the security menu
-  x,y = mon.getSize()
-  mon.setBackgroundColor(colors.lightGray)
-  --sOK, result = pcall(sg.openIris)
-  if irisState == "Opened" then
-	sOK, result = pcall(sg.openIris)
-  else 
-	sOK, result = pcall(sg.closeIris)
-  end
-  if sOK == false then
-    mon.setTextColor(colors.red)
-  else
-    mon.setTextColor(colors.black)
-  end
-  s = " DEFENSE "
-  i = 1
-  for  yc = y/3-1, y/3*2 +1 do
-    char = string.sub(s, i, i)
-	mon.setCursorPos(2, yc)
-	mon.write(" "..char.." ")
-	i = i+1
-  end
-  mon.setBackgroundColor(colors.black)
+	local x, y = mon.getSize()
+	mon.setBackgroundColor(colors.lightGray)
+	--sOK, result = pcall(sg.openIris)
+	if (irisState == "Opened") then
+		sOK, result = pcall(sg.openIris)
+	else 
+		sOK, result = pcall(sg.closeIris)
+	end
+	if (not sOK) then
+		mon.setTextColor(colors.red)
+	else
+		mon.setTextColor(colors.black)
+	end
+	local s = " DEFENSE "
+	local i = 1
+	for  yc = y / 3 - 1, y / 3 * 2 + 1 do
+		char_ = string.sub(s, i, i)
+		mon.setCursorPos(2, yc)
+		mon.write(" " .. char_ .. " ")
+		i = i + 1
+	end
+	mon.setBackgroundColor(colors.black)
 end
 
 function drawSecurityPageTop() --draws the top of the security menu, all the addresses stored in the security table
-  mon.setBackgroundColor(colors.black)
-  mon.clear()
-  mon.setTextColor(colors.black)
-  x,y = mon.getSize()
-  for yc = 1,y-3 do
-    if yc%2 == 1 then
-      mon.setBackgroundColor(colors.lightBlue)
-	else
-	  mon.setBackgroundColor(colors.lightGray)
-	end
-	for xc = 1,x do
-	  mon.setCursorPos(xc, yc)
-	  mon.write(" ")
-	end
-	mon.setCursorPos(x/2-4, yc)
-	mon.write("Add Address")
-  end
-  loadSecurity()
-  
-  
-  
-	if string.len(textutils.serialize(secInfo)) > 7 then
-    for k,v in pairs(secInfo) do
-	  mon.setCursorPos(1,i)
-	    if k%2 == 1 then
-          mon.setBackgroundColor(colors.lightBlue)
-	    else
-	      mon.setBackgroundColor(colors.lightGray)
-	    end
-	    mon.setCursorPos(1, k)
-		mon.write(v.name)
-	    mon.setCursorPos(x/2-4, k)
-	    mon.write("           ")
-	    mon.setCursorPos(x/2 - string.len(v.address)/2 +1, k)
-	    mon.write(v.address)
-		mon.setCursorPos(x - 7,k)
-		if v.mode == "ALLOW" then
-			mon.setBackgroundColor(colors.white)
-			mon.setTextColor(colors.black)
-		elseif v.mode == "DENY" then
-			mon.setBackgroundColor(colors.black)
-			mon.setTextColor(colors.white)
-		elseif v.mode == "NONE" then
-			mon.setBackgroundColor(colors.gray)
-			mon.setTextColor(colors.white)
+	mon.setBackgroundColor(colors.black)
+	mon.clear()
+	mon.setTextColor(colors.black)
+	local x, y = mon.getSize()
+	for yc = 1, y - 3 do
+		if (yc % 2 == 1) then
+			mon.setBackgroundColor(colors.lightBlue)
+		else
+			mon.setBackgroundColor(colors.lightGray)
 		end
-		mon.write(v.mode) -- ALLOW, DENY, NONE
-	    mon.setCursorPos(x,k)
-	    mon.setBackgroundColor(colors.red)
-		mon.setTextColor(colors.black)
-	    mon.write("X")
+		for xc = 1, x do
+			mon.setCursorPos(xc, yc)
+			mon.write(" ")
+		end
+		mon.setCursorPos(x / 2 - 4, yc)
+		mon.write("Add Address")
 	end
-  end 
-  mon.setBackgroundColor(colors.black)
+	loadSecurity()
+	if (#security >= 1) then
+		for k, v in pairs(security) do
+			mon.setCursorPos(1, i)
+			if (k % 2 == 1) then
+				mon.setBackgroundColor(colors.lightBlue)
+			else
+				mon.setBackgroundColor(colors.lightGray)
+			end
+			mon.setCursorPos(1, k)
+			mon.write(v.name)
+			mon.setCursorPos(x / 2 - 4, k)
+			mon.write("           ")
+			mon.setCursorPos(x / 2 - string.len(v.address) / 2 + 1, k)
+			mon.write(v.address)
+			mon.setCursorPos(x - 7, k)
+			if (v.mode == "ALLOW") then
+				mon.setBackgroundColor(colors.white)
+				mon.setTextColor(colors.black)
+			elseif (v.mode == "DENY") then
+				mon.setBackgroundColor(colors.black)
+				mon.setTextColor(colors.white)
+			elseif (v.mode == "NONE") then
+				mon.setBackgroundColor(colors.gray)
+				mon.setTextColor(colors.white)
+			end
+			mon.write(v.mode) -- ALLOW, DENY, NONE
+			mon.setCursorPos(x, k)
+			mon.setBackgroundColor(colors.red)
+			mon.setTextColor(colors.black)
+			mon.write("X")
+		end
+	end 
+	mon.setBackgroundColor(colors.black)
 end
   
 function drawSecurityPageBottom(listType) -- draws the buttons at the bottom of the security page
