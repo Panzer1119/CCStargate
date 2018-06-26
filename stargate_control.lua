@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 04:15 PM
+  Date: Edited 26 Jun 2018 - 04:42 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -68,7 +68,7 @@ end
 
 function loadSettings()
 	if (not fs.exists(filename_settings)) then
-		settings = {irisOnIncomingDial = security_none, alarmOutputSides = {}}
+		settings = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}}
 		saveSettings()
 	end
 	settings = utils.readTableFromFile(filename_settings)
@@ -354,6 +354,7 @@ function drawSgStatus(status) -- draws stargate status
 end
 
 function drawIris(state) --draws button to control the Iris
+	local x, y = mon.getSize()
 	mon.setBackgroundColor(colors.lightGray)
 	--ok, result = pcall(sg.openIris)
 	local ok = forceIrisState(false)
@@ -505,6 +506,7 @@ function drawSecurityPageTop() --draws the top of the security menu, all the add
 end
   
 function drawSecurityPageBottom(listType) -- draws the buttons at the bottom of the security page
+	local x, y = mon.getSize()
 	local s = listType
 	for yc = y - 2, y do
 		for xc = 1, x do
@@ -742,12 +744,13 @@ function drawRemoteAddress()
 end
 
 function drawHistoryButton()
+	local x, y = mon.getSize()
 	mon.setBackgroundColor(colors.lightGray)
 	mon.setTextColor(colors.black)
 	local s = " HISTORY "
 	local i = 1
 	for yc = y / 3 - 1, y / 3 * 2 + 1 do
-		localchar_ = string.sub(s, i, i)
+		local char_ = string.sub(s, i, i)
 		mon.setCursorPos(x - 7, yc)
 		mon.write(" " .. char_ .. " ")
 		i = i + 1
@@ -885,7 +888,10 @@ end
 mon.setTextScale(1)
 drawHome()
 irisState = "Opened"
-drawIris(false)
+if (settings.irisState ~= nil and (settings.irisState == "Opened" or settings.irisState == "Closed")) then
+	irisState = settings.irisState
+end
+forceIrisState(true)
 resetTimer()
 while true do
 	local event, param1, param2, param3 = os.pullEvent()
@@ -909,10 +915,14 @@ while true do
 					irisState = "Closed"
 				end
 			end
+			loadSettings()
+			settings.irisState = irisState
+			saveSettings()
 		elseif (param2 >= 2 and param2 <= 4 and param3 >= y / 3 - 2 and param3 <= y / 3 * 2 + 1) then -- click has opened the security menu
 			menu = "security"
 			local sOK = forceIrisState(false)
 			if (sOK) then
+				loadSettings()
 				drawSecurityPageTop()
 				drawSecurityPageBottom(settings.irisOnIncomingDial)
 				--drawSecurityPageBottom(security_deny)
@@ -927,15 +937,16 @@ while true do
 								drawHome()
 								break
 							elseif (param2 < x - 6) then -- click has changed the global security type, cycles through "ALLOW OTHER", "DENY OTHER", "NONE"
-							if (settings.irisOnIncomingDial == security_deny) then
-								settings.irisOnIncomingDial = security_allow
-							elseif (settings.irisOnIncomingDial == security_allow) then
-								settings.irisOnIncomingDial = security_none			
-							elseif (settings.irisOnIncomingDial == security_none) then
-								settings.irisOnIncomingDial = security_deny
+								loadSettings()
+								if (settings.irisOnIncomingDial == security_deny) then
+									settings.irisOnIncomingDial = security_allow
+								elseif (settings.irisOnIncomingDial == security_allow) then
+									settings.irisOnIncomingDial = security_none			
+								elseif (settings.irisOnIncomingDial == security_none) then
+									settings.irisOnIncomingDial = security_deny
+								end
+								saveSettings()
 							end
-							saveSettings()
-						end
 						elseif (param2 > x - 3) then -- delete record
 							loadSecurity()
 							table.remove(security, param3)
@@ -1155,3 +1166,6 @@ while true do
 		end
 	end
 end
+loadSettings()
+settings.irisState = irisState
+saveSettings()
