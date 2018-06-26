@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 03:12 PM
+  Date: Edited 26 Jun 2018 - 04:02 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -348,11 +348,7 @@ end
 function drawIris(state) --draws button to control the Iris
 	mon.setBackgroundColor(colors.lightGray)
 	--ok, result = pcall(sg.openIris)
-	if (irisState == "Opened") then
-		ok, result = pcall(sg.openIris)
-	else
-		ok, result = pcall(sg.closeIris)
-	end
+	local ok = forceIrisState(false)
 	if (not ok) then
 		mon.setTextColor(colors.red)
 	elseif (state) then
@@ -429,11 +425,7 @@ function securityButton() -- draws the button to access the security menu
 	local x, y = mon.getSize()
 	mon.setBackgroundColor(colors.lightGray)
 	--sOK, result = pcall(sg.openIris)
-	if (irisState == "Opened") then
-		sOK, result = pcall(sg.openIris)
-	else 
-		sOK, result = pcall(sg.closeIris)
-	end
+	local sOK = forceIrisState(false)
 	if (not sOK) then
 		mon.setTextColor(colors.red)
 	else
@@ -858,6 +850,24 @@ function resetTimer()
 	timeout = os.startTimer(time)
 end
 
+function forceIrisState(draw)
+	if (irisState == "Opened") then
+		local ok, result = pcall(sg.openIris)
+		if (ok and draw) then
+			drawIris(false)
+			irisState = "Opened"
+		end
+		return ok
+	else
+		local ok, result = pcall(sg.closeIris)
+		if (ok and draw) then
+			drawIris(true)
+			irisState = "Closed"
+		end
+		return ok
+	end
+end
+
 loadAll()
 
 if (settings.irisOnIncomingDial == nil) then
@@ -893,302 +903,247 @@ while true do
 			end
 		elseif (param2 >= 2 and param2 <= 4 and param3 >= y / 3 - 2 and param3 <= y / 3 * 2 + 1) then -- click has opened the security menu
 			menu = "security"
-			local sOK = false
-			if (irisState == "Opened") then
-				sOK, result = pcall(sg.openIris)
-			else 
-				sOK, result = pcall(sg.closeIris)
-			end
+			local sOK = forceIrisState(false)
 			if (sOK) then
 				drawSecurityPageTop()
 				drawSecurityPageBottom(settings.irisOnIncomingDial)
 				--drawSecurityPageBottom(security_deny)
-			while true do
-				local event, param1, param2, param3 = os.pullEvent()
-				if (event == "timer" and param1 == timeout) then
-					update()
-					resetTimer()
-				elseif (event == "monitor_touch") then
-					if (param3 >= y - 2) then -- checks if the user's touch is at the bottom of the screen with the buttons
-						if (param2 >= x - 8) then -- "back" button has been pushed, returns user to home menu
-							drawHome()
-							break
-						elseif (param2 < x - 6) then -- click has changed the global security type, cycles through "ALLOW OTHER", "DENY OTHER", "NONE"
-						if (settings.irisOnIncomingDial == security_deny) then
-							settings.irisOnIncomingDial = security_allow
-						elseif (settings.irisOnIncomingDial == security_allow) then
-							settings.irisOnIncomingDial = security_none			
-						elseif (settings.irisOnIncomingDial == security_none) then
-							settings.irisOnIncomingDial = security_deny
+				while true do
+					local event, param1, param2, param3 = os.pullEvent()
+					if (event == "timer" and param1 == timeout) then
+						update()
+						resetTimer()
+					elseif (event == "monitor_touch") then
+						if (param3 >= y - 2) then -- checks if the user's touch is at the bottom of the screen with the buttons
+							if (param2 >= x - 8) then -- "back" button has been pushed, returns user to home menu
+								drawHome()
+								break
+							elseif (param2 < x - 6) then -- click has changed the global security type, cycles through "ALLOW OTHER", "DENY OTHER", "NONE"
+							if (settings.irisOnIncomingDial == security_deny) then
+								settings.irisOnIncomingDial = security_allow
+							elseif (settings.irisOnIncomingDial == security_allow) then
+								settings.irisOnIncomingDial = security_none			
+							elseif (settings.irisOnIncomingDial == security_none) then
+								settings.irisOnIncomingDial = security_deny
+							end
+							saveSettings()
 						end
-						saveSettings()
-					end
-					elseif (param2 > x - 3) then -- delete record
-						loadSecurity()
-						table.remove(security, param3)
-						saveSecurity()
-						drawSecurityPageTop()
-					elseif (param2 > x - 8 and param2 < x - 3) then -- click has changed the security type, cycles through "ALLOW", "DENY", "NONE"
-						loadSecurity()
-						for k, v in pairs(security) do
-							if (k == param3) then
-								if (v.mode == security_allow) then
-									v.mode = security_deny
-								elseif (v.mode == security_deny) then
-									v.mode = security_none
-								elseif (v.mode == security_none) then
-									v.mode = security_allow
+						elseif (param2 > x - 3) then -- delete record
+							loadSecurity()
+							table.remove(security, param3)
+							saveSecurity()
+							drawSecurityPageTop()
+						elseif (param2 > x - 8 and param2 < x - 3) then -- click has changed the security type, cycles through "ALLOW", "DENY", "NONE"
+							loadSecurity()
+							for k, v in pairs(security) do
+								if (k == param3) then
+									if (v.mode == security_allow) then
+										v.mode = security_deny
+									elseif (v.mode == security_deny) then
+										v.mode = security_none
+									elseif (v.mode == security_none) then
+										v.mode = security_allow
+									end
 								end
 							end
+							saveSecurity()
+							drawSecurityPageTop()
+							drawSecurityPageBottom(settings.irisOnIncomingDial)
+							--drawSecurityPageBottom(security_deny)
+						elseif (param3 < y - 2) then -- check if empty, if so add new entry
+							loadSecurity()
+							local gate = inputPage()
+							gate.id = #security + 1
+							table.insert(security, 1, gate)
+							saveSecurity()
+							drawSecurityPageTop()
+							drawSecurityPageBottom(settings.irisOnIncomingDial)
+							--drawSecurityPageBottom(security_deny)
 						end
-						saveSecurity()
-						drawSecurityPageTop()
-						drawSecurityPageBottom(settings.irisOnIncomingDial)
-						--drawSecurityPageBottom(security_deny)
-					elseif (param3 < y - 2) then -- check if empty, if so add new entry
-						loadSecurity()
-						local gate = inputPage()
-						gate.id = #security + 1
-						table.insert(security, 1, gate)
-						saveSecurity()
-						drawSecurityPageTop()
-						drawSecurityPageBottom(settings.irisOnIncomingDial)
-						--drawSecurityPageBottom(security_deny)
-					end
-				elseif (event ~= timer) then -- if an event that isn't a users touch happens the screen will return to the home screen (in case of incoming connection)
-					drawHome()
-					break
-				end
-			end
-		end
-		resetTimer()
-	elseif (param2 > x / 2 - 5 and param2 <= x / 2 and param3 >= y - 3 and param3 <= y - 1) then -- click has opened dial menu
-		menu = "dial"
-		local status, int = sg.stargateState()
-		if (status == "Idle") then
-			drawBookmarksPage()
-			while true do
-				local event, param1, param2, param3 = os.pullEvent()
-				if (event == "timer" and param1 == timeout) then
-					update()
-					resetTimer()
-				elseif (event == "monitor_touch") then
-					if (param3 >= y - 2 then) -- user clicked back
+					elseif (event ~= timer) then -- if an event that isn't a users touch happens the screen will return to the home screen (in case of incoming connection)
 						drawHome()
 						break
-					elseif (param2 > x - 2) then -- user clicked delete on a bookmark
-						loadBookmarks()
-						table.remove(bookmarks, utils.getTableIndexFromArray(bookmarks, param3, getId))
-						saveBookmarks()
-						drawBookmarksPage()
+					end
+				end
+			end
+			resetTimer()
+		elseif (param2 > x / 2 - 5 and param2 <= x / 2 and param3 >= y - 3 and param3 <= y - 1) then -- click has opened dial menu
+			menu = "dial"
+			local status, int = sg.stargateState()
+			if (status == "Idle") then
+				drawBookmarksPage()
+				while true do
+					local event, param1, param2, param3 = os.pullEvent()
+					if (event == "timer" and param1 == timeout) then
+						update()
 						resetTimer()
-					else -- user has clicked on a bookmark
-						loadBookmarks()
-						local gate = utils.getTableFromArray(bookmarks, param3, getId)
-						if (gate ~= nil) then
-							drawHome() -- Changed energy checkup before dialing (by Panzer1119)
-							local energyNeeded = sg.energyToDial(gate.address)
-							local energyAvailable = sg.energyAvailable()
-							if (energyNeeded > energyAvailable) then
-								drawSgStatus("No Energy")
-							else
-								local ok, result = pcall(sg.dial, gate.address)
-								if (ok) then
-									local status, int = sg.stargateState()
-									drawSgStatus(status)
-									addToHistory(gate.address, false)
-								else
-									drawSgStatus("Error")
-								end
-							end
+					elseif (event == "monitor_touch") then
+						if (param3 >= y - 2 then) -- user clicked back
+							drawHome()
 							break
-						else
-							local gate = inputPage()
-							gate.id = y
-							table.insert(bookmarks, 1, gate)
+						elseif (param2 > x - 2) then -- user clicked delete on a bookmark
+							loadBookmarks()
+							table.remove(bookmarks, utils.getTableIndexFromArray(bookmarks, param3, getId))
 							saveBookmarks()
 							drawBookmarksPage()
 							resetTimer()
-							break
+						else -- user has clicked on a bookmark
+							loadBookmarks()
+							local gate = utils.getTableFromArray(bookmarks, param3, getId)
+							if (gate ~= nil) then
+								drawHome() -- Changed energy checkup before dialing (by Panzer1119)
+								local energyNeeded = sg.energyToDial(gate.address)
+								local energyAvailable = sg.energyAvailable()
+								if (energyNeeded > energyAvailable) then
+									drawSgStatus("No Energy")
+								else
+									local ok, result = pcall(sg.dial, gate.address)
+									if (ok) then
+										local status, int = sg.stargateState()
+										drawSgStatus(status)
+										addToHistory(gate.address, false)
+									else
+										drawSgStatus("Error")
+									end
+								end
+								break
+							else
+								local gate = inputPage()
+								gate.id = y
+								table.insert(bookmarks, 1, gate)
+								saveBookmarks()
+								drawBookmarksPage()
+								resetTimer()
+								break
+							end
 						end
+					elseif (event ~= timer) then
+						drawHome()
+						break
 					end
-				elseif (event ~= timer) then
-					drawHome()
-					break
 				end
 			end
-		end
-		resetTimer()
-	elseif (param2 > x - 7 and param2 < x - 4 and param3 >= y / 3 - 2 and param3 <= y / 3 * 2 + 1) then -- click has opened history menu
-		menu = "history"
-		drawHistoryPage()
-		while true do
-			local event, param1, param2, param3 = os.pullEvent()
-			if (event == "timer" and param1 == timeout) then
-				update()
-				resetTimer()
-			elseif (event == "monitor_touch") then
-				if (param3 >= y - 2) then -- user clicked back
-					drawHome()
-					break -- might break everything
-				elseif (param2 >= x / 2 + 7 and param2 <= x / 2 + 10 and param3 <= clickLimit) then -- user has clicked save.
-					loadHistory()
-					loadBookmarks()
-					for i = 1, y do
-						if (utils.getTableFromArray(bookmarks, i, getId) == nil) then
-							local gate = historyInputPage(history.incoming[param3])
-							gate.id = i
-							table.insert(bookmarks, gate)
-							saveBookmarks()
-							break
+			resetTimer()
+		elseif (param2 > x - 7 and param2 < x - 4 and param3 >= y / 3 - 2 and param3 <= y / 3 * 2 + 1) then -- click has opened history menu
+			menu = "history"
+			drawHistoryPage()
+			while true do
+				local event, param1, param2, param3 = os.pullEvent()
+				if (event == "timer" and param1 == timeout) then
+					update()
+					resetTimer()
+				elseif (event == "monitor_touch") then
+					if (param3 >= y - 2) then -- user clicked back
+						drawHome()
+						break -- might break everything
+					elseif (param2 >= x / 2 + 7 and param2 <= x / 2 + 10 and param3 <= clickLimit) then -- user has clicked save.
+						loadHistory()
+						loadBookmarks()
+						for i = 1, y do
+							if (utils.getTableFromArray(bookmarks, i, getId) == nil) then
+								local gate = historyInputPage(history.incoming[param3])
+								gate.id = i
+								table.insert(bookmarks, gate)
+								saveBookmarks()
+								break
+							end
 						end
+					elseif (param2 >= x - 9 and param3 <= clickLimit) then -- user click "ban/allow"
+						loadHistory()
+						loadSecurity()
+						local gate = historyInputPage(history.incoming[param3])
+						gate.id = #security + 1
+						table.insert(security, 1, gate)
+						saveSecurity()
 					end
-				elseif (param2 >= x - 9 and param3 <= clickLimit) then -- user click "ban/allow"
-					loadHistory()
-					loadSecurity()
-					local gate = historyInputPage(history.incoming[param3])
-					gate.id = #security + 1
-					table.insert(security, 1, gate)
-					saveSecurity()
-				end
-				drawHome()
-				break  
-			end		
+					drawHome()
+					break  
+				end		
+			end
+			resetTimer()
+		elseif (param2 > x / 2 + 2 and param2 <= x / 2 + 7 and param3 >= y - 3 and param3 <= y - 1) then -- user clicked TERM
+			local ok, result = pcall(sg.disconnect)
+			forceIrisState(true)
+			drawChevrons()
 		end
-		resetTimer()
-	elseif (param2 > x / 2 + 2 and param2 <= x / 2 + 7 and param3 >= y - 3 and param3 <= y - 1) then -- user clicked TERM
-	ok, result = pcall(sg.disconnect)
-	if irisState == "Opened" then
-	ok, result = pcall(sg.openIris)
-	if ok then
-	drawIris(false)
-	irisState = "Opened"
-	end
-	else
-	ok, result = pcall(sg.closeIris)
-	if ok then
-	drawIris(true)
-	irisState = "Closed"
-	end
-	end
-	drawChevrons()
-	end
-	elseif event == "sgDialIn" then
-	mon.setTextColor(colors.orange)
-	drawRemoteAddress()
-	alarmSet(true)
-	if fs.exists("currentSec") then
-	file = fs.open("currentSec", "r")
-	currentSec = file.readAll()
-	file.close()
-	end
-	if fs.exists("secList") then
-	file = fs.open("secList", "r")
-	secList = textutils.unserialize(file.readAll())
-	found = false
-	for k,v in pairs(secList) do
-	address = v.address
-	if string.sub(v.address,1,7) == param2 or v.address == param2 then
-	if v.mode == security_allow then
-	sg.openIris()
-	drawIris(false)
-	elseif v.mode == security_deny then
-	sg.closeIris()
-	drawIris(true)
-	elseif v.mode == security_none then
-	--sg.openIris()
-	--drawIris(false)
-	end
-	--[[
-	if settings.irisOnIncomingDial == security_deny then
-	sg.closeIris()
-	drawIris(true)
-	elseif settings.irisOnIncomingDial == security_allow then
-	sg.openIris()
-	drawIris(false)
-	else
-	sg.openIris()
-	drawIris(false)
-	end
-	]]--
-	found = true
-	end
-	end
-	if found == false then
-	if settings.irisOnIncomingDial == security_deny then
-	sg.closeIris()
-	drawIris(true)
-	elseif settings.irisOnIncomingDial == security_allow then
-	sg.openIris()
-	drawIris(false)
-	end
-	end
-	else
-	if settings.irisOnIncomingDial == security_deny then
-	sg.closeIris()
-	drawIris(true)
-	elseif settings.irisOnIncomingDial == security_allow then
-	sg.openIris()
-	drawIris(false)
-	end
-	end
-	addToHistory(param2, true)
-	elseif event == "sgMessageReceived" then
-	if param2 == "Open" then
-	mon.setTextColor(colors.lime)
-	drawRemoteIris()
-	elseif param2 == "Closed" then
-	mon.setTextColor(colors.red)
-	drawRemoteIris()
-	end	  
-	elseif event == "sgStargateStateChange" or "sgChevronEngaged" then
-	drawDial()
-	drawPowerBar()
-	drawTerm()
-	status, int = sg.stargateState()
-	drawSgStatus(tostring(status))
-	if status == "idle" then
-	isConnected = false
-	else
-	isConnected = true
-	end
-	if event == "sgChevronEngaged" then
-	mon.setTextColor(colors.orange)
-	drawChev({param2, param3})
-	update()
-	mon.setTextColor(colors.orange)
-	if param2 == 1 then
-	dialling = {}
-	end
-	table.insert(dialling, param2, param3)
-	drawRemoteAddress()
-	resetTimer()
-	elseif param2 == "Idle" then
-	alarmSet(false)
-	if irisState == "Opened" then
-	ok, result = pcall(sg.openIris)
-	if ok then
-	drawIris(false)
-	irisState = "Opened"
-	end
-	else
-	ok, result = pcall(sg.closeIris)
-	if ok then
-	drawIris(true)
-	irisState = "Closed"
-	end
-	end
-	drawChevrons()
-	resetTimer()
-	elseif param2 == "Connected" then
-	alarmSet(false)
-	mon.setTextColor(colors.lightBlue)
-	drawRemoteAddress()
-	for k,v in pairs(dialling) do
-	drawChev({k,v})
-	end
-	sg.sendMessage(sg.irisState())
-	resetTimer()
-	end
+	elseif (event == "sgDialIn") then
+		mon.setTextColor(colors.orange)
+		drawRemoteAddress()
+		alarmSet(true)
+		loadSecurity()
+		local gate = utils.getTableFromArray(security, param2, getAddress)
+		if (gate ~= nil) then
+			if (string.sub(gate.address, 1, 7) == param2 or gate.address == param2) then
+				if (gate.mode == security_allow) then
+					sg.openIris()
+					drawIris(false)
+				elseif (gate.mode == security_deny) then
+					sg.closeIris()
+					drawIris(true)
+				elseif (gate.mode == security_none) then
+					if (settings.irisOnIncomingDial == security_deny) then
+						sg.closeIris()
+						drawIris(true)
+					elseif (settings.irisOnIncomingDial == security_allow) then
+						sg.openIris()
+						drawIris(false)
+					end
+				end
+			end
+		else
+			if (settings.irisOnIncomingDial == security_deny) then
+				sg.closeIris()
+				drawIris(true)
+			elseif (settings.irisOnIncomingDial == security_allow) then
+				sg.openIris()
+				drawIris(false)
+			end
+		end
+		addToHistory(param2, true)
+	elseif (event == "sgMessageReceived") then
+		if (param2 == "Open") then
+			mon.setTextColor(colors.lime)
+			drawRemoteIris()
+		elseif (param2 == "Closed") then
+			mon.setTextColor(colors.red)
+			drawRemoteIris()
+		end	  
+	elseif (event == "sgStargateStateChange" or "sgChevronEngaged") then
+		drawDial()
+		drawPowerBar()
+		drawTerm()
+		local status, int = sg.stargateState()
+		drawSgStatus(tostring(status))
+		if (status == "idle") then
+			isConnected = false
+		else
+			isConnected = true
+		end
+		if (event == "sgChevronEngaged") then
+			mon.setTextColor(colors.orange)
+			drawChev({param2, param3})
+			update()
+			mon.setTextColor(colors.orange)
+			if (param2 == 1) then
+				dialling = {}
+			end
+			table.insert(dialling, param2, param3)
+			drawRemoteAddress()
+			resetTimer()
+		elseif (param2 == "Idle") then
+			alarmSet(false)
+			forceIrisState(true)
+			drawChevrons()
+			resetTimer()
+		elseif (param2 == "Connected") then
+			alarmSet(false)
+			mon.setTextColor(colors.lightBlue)
+			drawRemoteAddress()
+			for k, v in pairs(dialling) do
+				drawChev({k, v})
+			end
+			sg.sendMessage(sg.irisState())
+			resetTimer()
+		end
 	end
 end
