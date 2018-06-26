@@ -470,32 +470,32 @@ function drawSecurityPageTop() --draws the top of the security menu, all the add
 	end
 	loadSecurity()
 	if (#security >= 1) then
-		for k, v in pairs(security) do
-			mon.setCursorPos(1, i)
-			if (k % 2 == 1) then
+		for i = 1, y do
+			local gate = utils.getTableFromArray(security, i, getId)
+			if (i % 2 == 1) then
 				mon.setBackgroundColor(colors.lightBlue)
 			else
 				mon.setBackgroundColor(colors.lightGray)
 			end
-			mon.setCursorPos(1, k)
-			mon.write(v.name)
-			mon.setCursorPos(x / 2 - 4, k)
+			mon.setCursorPos(1, i)
+			mon.write(gate.name)
+			mon.setCursorPos(x / 2 - 4, i)
 			mon.write("           ")
-			mon.setCursorPos(x / 2 - string.len(v.address) / 2 + 1, k)
-			mon.write(v.address)
-			mon.setCursorPos(x - 7, k)
-			if (v.mode == security_allow) then
+			mon.setCursorPos(x / 2 - string.len(gate.address) / 2 + 1, i)
+			mon.write(gate.address)
+			mon.setCursorPos(x - 7, i)
+			if (gate.mode == security_allow) then
 				mon.setBackgroundColor(colors.white)
 				mon.setTextColor(colors.black)
-			elseif (v.mode == security_deny) then
+			elseif (gate.mode == security_deny) then
 				mon.setBackgroundColor(colors.black)
 				mon.setTextColor(colors.white)
-			elseif (v.mode == security_none) then
+			elseif (gate.mode == security_none) then
 				mon.setBackgroundColor(colors.gray)
 				mon.setTextColor(colors.white)
 			end
-			mon.write(v.mode) -- ALLOW, DENY, NONE
-			mon.setCursorPos(x, k)
+			mon.write(gate.mode) -- ALLOW, DENY, NONE
+			mon.setCursorPos(x, i)
 			mon.setBackgroundColor(colors.red)
 			mon.setTextColor(colors.black)
 			mon.write("X")
@@ -1044,26 +1044,12 @@ while true do
 						end
 					end
 				elseif (param2 >= x - 9 and param3 <= clickLimit) then -- user click "ban/allow"
-					if fs.exists("history") then
-						file = fs.open("history", "r")
-						history = textutils.unserialize(file.readAll())
-						file.close()
-						if fs.exists("secList") == false then
-							secList = {}
-							table.insert(secList, 1, historyInputPage(history[param3]))
-							file = fs.open("secList", "w")
-							file.write(textutils.serialize(secList))
-							file.close()
-						else
-							file = fs.open("secList", "r")
-							secList = textutils.unserialize(file.readAll())
-							file.close()
-							table.insert(secList, 1, historyInputPage(history[param3]))
-							file = fs.open("secList", "w")
-							file.write(textutils.serialize(secList))
-							file.close()
-						end
-					end
+					loadHistory()
+					loadSecurity()
+					local gate = historyInputPage(history.incoming[param3])
+					gate.id = #security + 1
+					table.insert(security, 1, gate)
+					saveSecurity()
 				end
 				drawHome()
 				break  
