@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 04:42 PM
+  Date: Edited 26 Jun 2018 - 05:40 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -36,8 +36,8 @@ menu = ""
 
 bookmarks = {}
 security = {}
-settings = {}
-history = {}
+settings = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}}
+history = {incoming = {}, outgoing = {}}
 
 filename_bookmarks = "stargate/bookmarks.lon"
 filename_security = "stargate/security.lon"
@@ -104,7 +104,7 @@ function saveSettings()
 	utils.writeTableToFile(filename_settings, settings)
 end
 
-function loadHistory()
+function saveHistory()
 	utils.writeTableToFile(filename_history, history)
 end
 
@@ -358,7 +358,7 @@ function drawIris(state) --draws button to control the Iris
 	mon.setBackgroundColor(colors.lightGray)
 	--ok, result = pcall(sg.openIris)
 	local ok = forceIrisState(false)
-	if (not ok) then
+	if (ok == nil or not ok) then
 		mon.setTextColor(colors.red)
 	elseif (state) then
 		sg.closeIris()
@@ -473,33 +473,35 @@ function drawSecurityPageTop() --draws the top of the security menu, all the add
 	if (#security >= 1) then
 		for i = 1, y do
 			local gate = utils.getTableFromArray(security, i, getId)
-			if (i % 2 == 1) then
-				mon.setBackgroundColor(colors.lightBlue)
-			else
-				mon.setBackgroundColor(colors.lightGray)
-			end
-			mon.setCursorPos(1, i)
-			mon.write(gate.name)
-			mon.setCursorPos(x / 2 - 4, i)
-			mon.write("           ")
-			mon.setCursorPos(x / 2 - string.len(gate.address) / 2 + 1, i)
-			mon.write(gate.address)
-			mon.setCursorPos(x - 7, i)
-			if (gate.mode == security_allow) then
-				mon.setBackgroundColor(colors.white)
+			if (gate ~= nil) then
+				if (i % 2 == 1) then
+					mon.setBackgroundColor(colors.lightBlue)
+				else
+					mon.setBackgroundColor(colors.lightGray)
+				end
+				mon.setCursorPos(1, i)
+				mon.write(gate.name)
+				mon.setCursorPos(x / 2 - 4, i)
+				mon.write("           ")
+				mon.setCursorPos(x / 2 - string.len(gate.address) / 2 + 1, i)
+				mon.write(gate.address)
+				mon.setCursorPos(x - 7, i)
+				if (gate.mode == security_allow) then
+					mon.setBackgroundColor(colors.white)
+					mon.setTextColor(colors.black)
+				elseif (gate.mode == security_deny) then
+					mon.setBackgroundColor(colors.black)
+					mon.setTextColor(colors.white)
+				elseif (gate.mode == security_none) then
+					mon.setBackgroundColor(colors.gray)
+					mon.setTextColor(colors.white)
+				end
+				mon.write(gate.mode) -- ALLOW, DENY, NONE
+				mon.setCursorPos(x, i)
+				mon.setBackgroundColor(colors.red)
 				mon.setTextColor(colors.black)
-			elseif (gate.mode == security_deny) then
-				mon.setBackgroundColor(colors.black)
-				mon.setTextColor(colors.white)
-			elseif (gate.mode == security_none) then
-				mon.setBackgroundColor(colors.gray)
-				mon.setTextColor(colors.white)
+				mon.write("X")
 			end
-			mon.write(gate.mode) -- ALLOW, DENY, NONE
-			mon.setCursorPos(x, i)
-			mon.setBackgroundColor(colors.red)
-			mon.setTextColor(colors.black)
-			mon.write("X")
 		end
 	end 
 	mon.setBackgroundColor(colors.black)
@@ -863,14 +865,20 @@ end
 
 function forceIrisState(draw)
 	if (irisState == "Opened") then
-		local ok, result = pcall(sg.openIris)
+		local ok = sg.openIris()
+		if (ok == nil) then
+			return nil
+		end
 		if (ok and draw) then
 			drawIris(false)
 			irisState = "Opened"
 		end
 		return ok
 	else
-		local ok, result = pcall(sg.closeIris)
+		local ok = sg.closeIris()
+		if (ok == nil) then
+			return nil
+		end
 		if (ok and draw) then
 			drawIris(true)
 			irisState = "Closed"
@@ -903,13 +911,13 @@ while true do
 		local x, y = mon.getSize()
 		if (param2 >= 6 and param2 <= 8 and param3 >= y / 3 - 2 and param3 <= y / 3 * 2 + 1) then -- opens or closes the Iris
 			if (sg.irisState() == "Closed") then
-				local ok, result = pcall(sg.openIris)
+				local ok = sg.openIris()
 				if (ok) then
 					drawIris(false)
 					irisState = "Opened"
 				end
 			else
-				local ok, result = pcall(sg.closeIris)
+				local ok = sg.closeIris()
 				if (ok) then
 					drawIris(true)
 					irisState = "Closed"
@@ -979,7 +987,7 @@ while true do
 							drawSecurityPageBottom(settings.irisOnIncomingDial)
 							--drawSecurityPageBottom(security_deny)
 						end
-					elseif (event ~= timer) then -- if an event that isn't a users touch happens the screen will return to the home screen (in case of incoming connection)
+					elseif (event ~= "timer") then -- if an event that isn't a users touch happens the screen will return to the home screen (in case of incoming connection)
 						drawHome()
 						break
 					end
@@ -1027,8 +1035,8 @@ while true do
 								end
 								break
 							else
-								local gate = inputPage()
-								gate.id = y
+								gate = inputPage()
+								gate.id = param3
 								table.insert(bookmarks, 1, gate)
 								saveBookmarks()
 								drawBookmarksPage()
@@ -1036,7 +1044,7 @@ while true do
 								break
 							end
 						end
-					elseif (event ~= timer) then
+					elseif (event ~= "timer") then
 						drawHome()
 						break
 					end
@@ -1127,7 +1135,7 @@ while true do
 			mon.setTextColor(colors.red)
 			drawRemoteIris()
 		end	  
-	elseif (event == "sgStargateStateChange" or "sgChevronEngaged") then
+	elseif (event == "sgStargateStateChange" or event == "sgChevronEngaged") then
 		drawDial()
 		drawPowerBar()
 		drawTerm()
