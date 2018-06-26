@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 04:11 PM
+  Date: Edited 26 Jun 2018 - 04:15 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -51,10 +51,18 @@ security_none = "NONE"
 -- ########## LOAD BEGIN
 
 function loadBookmarks()
+	if (not fs.exists(filename_bookmarks)) then
+		bookmarks = {}
+		saveBookmarks()
+	end
 	bookmarks = utils.readTableFromFile(filename_bookmarks)
 end
 
 function loadSecurity()
+	if (not fs.exists(filename_security)) then
+		security = {}
+		saveSecurity()
+	end
 	security = utils.readTableFromFile(filename_security)
 end
 
@@ -89,7 +97,7 @@ function saveBookmarks()
 end
 
 function saveSecurity()
-	 utils.writeTableToFile(filename_security, security)
+	utils.writeTableToFile(filename_security, security)
 end
 
 function saveSettings()
@@ -138,7 +146,7 @@ end
 -- Functions for searching an array for a table END
 
 function alarmSet(state)
-	if (settings.alarmOutputSides ~= and #settings.alarmOutputSides >= 1) then
+	if (settings.alarmOutputSides ~= nil and #settings.alarmOutputSides >= 1) then
 		if (state) then
 			for i = 1, #settings.alarmOutputSides do
 				rs.setOutput(settings.alarmOutputSides[i], true)
@@ -978,7 +986,7 @@ while true do
 						update()
 						resetTimer()
 					elseif (event == "monitor_touch") then
-						if (param3 >= y - 2 then) -- user clicked back
+						if (param3 >= y - 2) then -- user clicked back
 							drawHome()
 							break
 						elseif (param2 > x - 2) then -- user clicked delete on a bookmark
