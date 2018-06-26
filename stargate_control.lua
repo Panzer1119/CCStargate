@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 05:50 PM
+  Date: Edited 26 Jun 2018 - 09:13 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -1112,6 +1112,8 @@ while true do
 					sg.closeIris()
 					drawIris(true)
 				elseif (gate.mode == security_none) then
+					--[[
+					-- gate mode overwrites global modes
 					if (settings.irisOnIncomingDial == security_deny) then
 						sg.closeIris()
 						drawIris(true)
@@ -1119,6 +1121,7 @@ while true do
 						sg.openIris()
 						drawIris(false)
 					end
+					]]--
 				end
 			end
 		else
