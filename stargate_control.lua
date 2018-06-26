@@ -60,12 +60,17 @@ end
 
 function loadSettings()
 	if (not fs.exists(filename_settings) then
-		utils.writeTableToFile(filename_settings, {irisOnIncomingDial = security_none, alarmOutputSides = {}})
+		settings = {irisOnIncomingDial = security_none, alarmOutputSides = {}}
+		saveSettings()
 	end
 	settings = utils.readTableFromFile(filename_settings)
 end
 
 function loadHistory()
+	if (not fs.exists(filename_history) then
+		history = {incoming = {}, outgoing = {}}
+		saveHistory()
+	end
 	history = utils.readTableFromFile(filename_history)
 end
 
@@ -749,9 +754,13 @@ function drawHistoryButton()
 	end
 end
 
-function addToHistory(address)
+function addToHistory(address, incoming)
 	loadHistory()
-	table.insert(history, 1, address)
+	if (incoming) then
+		table.insert(history.incoming, 1, address)
+	else
+		table.insert(history.outgoing, 1, address)
+	end
 	saveHistory()
 end
 
@@ -772,7 +781,7 @@ function drawHistoryPage()
 		end
 	end
 	loadHistory()
-	for k, v in pairs(history) do
+	for k, v in pairs(history.incoming) do
 		if (k % 2 == 1) then
 			mon.setBackgroundColor(colors.lightBlue)
 		else
@@ -790,7 +799,7 @@ function drawHistoryPage()
 	end 
 	mon.setBackgroundColor(colors.black)
 	for yc = y - 2, y do
-		for xc = 1,x do
+		for xc = 1, x do
 			mon.setCursorPos(xc, yc)
 			mon.write(" ")
 		end
@@ -955,126 +964,113 @@ while true do
 		resetTimer()
 	elseif (param2 > x / 2 - 5 and param2 <= x / 2 and param3 >= y - 3 and param3 <= y - 1) then -- click has opened dial menu
 		menu = "dial"
-	status, int = sg.stargateState()
-	if status == "Idle" then
-	drawBookmarksPage()
-	while true do
-	event, param1, param2, param3 = os.pullEvent()
-	if event == "timer" and param1 == timeout then
-	update()
-	resetTimer()
-	elseif event == "monitor_touch" then
-	if param3 >= y-2 then -- user clicked back
-	drawHome()
-	break
-	elseif param2 > x-2 then -- user clicked delete on a bookmark
-	if fs.exists(tostring(param3)) then
-	fs.delete(tostring(param3))
-	end
-	drawBookmarksPage()
-	resetTimer()
-	else -- user has clicked on a bookmark
-	if fs.exists(tostring(param3)) then
-	file = fs.open(tostring(param3), "r")
-	gateData = textutils.unserialize(file.readAll()) -- GATE DATA VARIABLE!!!
-	file.close()
-	drawHome()
-	for k,v in pairs(gateData) do
-	if k == "address" then  -- Changed energy checkup before dialing (by Panzer1119)
-	energyNeeded = sg.energyToDial(v)
-	energyAvailable = sg.energyAvailable()
-	if energyNeeded > energyAvailable then
-	drawSgStatus("No Energy")
-	else
-	ok, result = pcall(sg.dial, v)
-	if ok then
-	status, int = sg.stargateState()
-	drawSgStatus(status)
-	address = v
-	addToHistory(v)
-	else
-	drawSgStatus("Error")
-	end
-	end
-	end
-	sleep(.5)
-	end
-	break
-	else
-	x,y = mon.getSize()
-	for i = 1,y do
-	if fs.exists(tostring(i)) == false then
-	file = fs.open(tostring(i), "w")
-	file.write(textutils.serialize(inputPage()))
-	file.close()
-	drawBookmarksPage()
-	resetTimer()
-	break
-	end
-	end
-	end
-	end
-	elseif not event == timer then
-	drawHome()
-	break
-	end
-	end
-	end
-	resetTimer()
-	elseif param2 > x-7 and param2 < x-4 and param3 >= y/3-2 and param3 <= y/3*2+1 then -- Click has opened history menu
-	menu = "history"
-	drawHistoryPage()
-	while true do
-	event, param1, param2, param3 = os.pullEvent()
-	if event == "timer" and param1 == timeout then
-	update()
-	resetTimer()
-	elseif event == "monitor_touch" then
-	if param3 >= y-2 then -- user clicked back
-	drawHome()
-	break --might break everything
-	elseif param2 >= x/2+7 and param2 <= x/2+10 and param3 <= clickLimit then -- user has clicked save.
-	if fs.exists("history") then
-	file = fs.open("history", "r")
-	history = textutils.unserialize(file.readAll())
-	file.close()
-	for i = 1,y do
-	if fs.exists(tostring(i)) == false then
-	file = fs.open(tostring(i), "w")
-	file.write(textutils.serialize(historyInputPage(history[param3])))
-	file.close()
-	break
-	end
-	end
-	end
-	elseif param2 >= x-9 and param3 <= clickLimit then -- user click "ban/allow"
-	if fs.exists("history") then
-	file = fs.open("history", "r")
-	history = textutils.unserialize(file.readAll())
-	file.close()
-	if fs.exists("secList") == false then
-	secList = {}
-	table.insert(secList, 1, historyInputPage(history[param3]))
-	file = fs.open("secList", "w")
-	file.write(textutils.serialize(secList))
-	file.close()
-	else
-	file = fs.open("secList", "r")
-	secList = textutils.unserialize(file.readAll())
-	file.close()
-	table.insert(secList, 1, historyInputPage(history[param3]))
-	file = fs.open("secList", "w")
-	file.write(textutils.serialize(secList))
-	file.close()
-	end
-	end
-	end
-	drawHome()
-	break  
-	end		
-	end
-	resetTimer()
-	elseif param2 > x/2+2 and param2 <= x/2+7 and param3 >= y-3 and param3 <= y-1 then -- user clicked TERM
+		local status, int = sg.stargateState()
+		if (status == "Idle") then
+			drawBookmarksPage()
+			while true do
+				local event, param1, param2, param3 = os.pullEvent()
+				if (event == "timer" and param1 == timeout) then
+					update()
+					resetTimer()
+				elseif (event == "monitor_touch") then
+					if (param3 >= y - 2 then) -- user clicked back
+						drawHome()
+						break
+					elseif (param2 > x - 2) then -- user clicked delete on a bookmark
+						loadBookmarks()
+						table.remove(bookmarks, utils.getTableIndexFromArray(bookmarks, param3, getId))
+						saveBookmarks()
+						drawBookmarksPage()
+						resetTimer()
+					else -- user has clicked on a bookmark
+						loadBookmarks()
+						local gate = utils.getTableFromArray(bookmarks, param3, getId)
+						if (gate ~= nil) then
+							drawHome() -- Changed energy checkup before dialing (by Panzer1119)
+							local energyNeeded = sg.energyToDial(gate.address)
+							local energyAvailable = sg.energyAvailable()
+							if (energyNeeded > energyAvailable) then
+								drawSgStatus("No Energy")
+							else
+								local ok, result = pcall(sg.dial, gate.address)
+								if (ok) then
+									local status, int = sg.stargateState()
+									drawSgStatus(status)
+									addToHistory(gate.address, false)
+								else
+									drawSgStatus("Error")
+								end
+							end
+							break
+						else
+							local gate = inputPage()
+							gate.id = y
+							table.insert(bookmarks, 1, gate)
+							saveBookmarks()
+							drawBookmarksPage()
+							resetTimer()
+							break
+						end
+					end
+				elseif (event ~= timer) then
+					drawHome()
+					break
+				end
+			end
+		end
+		resetTimer()
+	elseif (param2 > x - 7 and param2 < x - 4 and param3 >= y / 3 - 2 and param3 <= y / 3 * 2 + 1) then -- click has opened history menu
+		menu = "history"
+		drawHistoryPage()
+		while true do
+			local event, param1, param2, param3 = os.pullEvent()
+			if (event == "timer" and param1 == timeout) then
+				update()
+				resetTimer()
+			elseif (event == "monitor_touch") then
+				if (param3 >= y - 2) then -- user clicked back
+					drawHome()
+					break -- might break everything
+				elseif (param2 >= x / 2 + 7 and param2 <= x / 2 + 10 and param3 <= clickLimit) then -- user has clicked save.
+					loadHistory()
+					loadBookmarks()
+					for i = 1, y do
+						if (utils.getTableFromArray(bookmarks, i, getId) == nil) then
+							local gate = historyInputPage(history.incoming[param3])
+							gate.id = i
+							table.insert(bookmarks, gate)
+							saveBookmarks()
+							break
+						end
+					end
+				elseif (param2 >= x - 9 and param3 <= clickLimit) then -- user click "ban/allow"
+					if fs.exists("history") then
+						file = fs.open("history", "r")
+						history = textutils.unserialize(file.readAll())
+						file.close()
+						if fs.exists("secList") == false then
+							secList = {}
+							table.insert(secList, 1, historyInputPage(history[param3]))
+							file = fs.open("secList", "w")
+							file.write(textutils.serialize(secList))
+							file.close()
+						else
+							file = fs.open("secList", "r")
+							secList = textutils.unserialize(file.readAll())
+							file.close()
+							table.insert(secList, 1, historyInputPage(history[param3]))
+							file = fs.open("secList", "w")
+							file.write(textutils.serialize(secList))
+							file.close()
+						end
+					end
+				end
+				drawHome()
+				break  
+			end		
+		end
+		resetTimer()
+	elseif (param2 > x / 2 + 2 and param2 <= x / 2 + 7 and param3 >= y - 3 and param3 <= y - 1) then -- user clicked TERM
 	ok, result = pcall(sg.disconnect)
 	if irisState == "Opened" then
 	ok, result = pcall(sg.openIris)
@@ -1150,7 +1146,7 @@ while true do
 	drawIris(false)
 	end
 	end
-	addToHistory(param2)
+	addToHistory(param2, true)
 	elseif event == "sgMessageReceived" then
 	if param2 == "Open" then
 	mon.setTextColor(colors.lime)
