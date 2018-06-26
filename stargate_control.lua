@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 01:54 PM
+  Date: Edited 26 Jun 2018 - 01:58 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -63,9 +63,9 @@ function loadAll()
 	loadSettings()
 end
 
-function alarmSet(set)
+function alarmSet(status)
 	if (settings.alarmOutputSides ~= and #settings.alarmOutputSides >= 1) then
-		if (set) then
+		if (status) then
 			for i = 1, #settings.alarmOutputSides do
 				rs.setOutput(settings.alarmOutputSides[i], true)
 			end
@@ -188,53 +188,53 @@ function drawChevrons() --draws cheyvrons on the screen
 	mon.write("     ")
 end
 
-function drawChev( chevInfo )
-  mon.setBackgroundColor(colors.gray)
-  x,y = mon.getSize()
-  chevX1 = x/3
-  chevX2 = x/3*2+1
-  chevY1 = y/3-2
-  chevY2 = y/3*2 +2
-  if chevInfo[1] == 1 then
-    chev1pos = {chevX1, chevY2 }
-    mon.setBackgroundColor(colors.gray)
-    mon.setCursorPos(math.floor(chev1pos[1]), math.floor(chev1pos[2])-1)
-    mon.write(" "..chevInfo[2].." ")
-  elseif chevInfo[1] == 2 then
-    chev2pos = {chevX1, chevY1 + ((chevY2 - chevY1) / 2) }
-    mon.setCursorPos(math.floor(chev2pos[1]-1), math.floor(chev2pos[2]))
-    mon.write(" "..chevInfo[2].." ")
-  elseif chevInfo[1] == 3 then
-    chev3pos = {chevX1, chevY1 }
-    mon.setCursorPos(math.floor(chev3pos[1]), math.floor(chev3pos[2]+1))
-    mon.write(" "..chevInfo[2].." ")
-  elseif chevInfo[1] == 4 then
-    chev4pos = {chevX1 + ((chevX2 - chevX1) / 2), chevY1 }
-    mon.setCursorPos(math.floor(chev4pos[1]-1), math.floor(chev4pos[2]))
-    mon.write(" "..chevInfo[2].." ")
-  elseif chevInfo[1] == 5 then
-    chev5pos = {chevX2, chevY1 }
-    mon.setCursorPos(math.floor(chev5pos[1]-2), math.floor(chev5pos[2])+1)
-    mon.write(" "..chevInfo[2].." ")
-  elseif chevInfo[1] == 6 then
-    chev6pos = {chevX2, chevY1 + ((chevY2 - chevY1) / 2) }
-    mon.setCursorPos(math.floor(chev6pos[1]-1), math.floor(chev6pos[2]))
-    mon.write(" "..chevInfo[2].." ")
-  elseif chevInfo[1] == 7 then
-    chev7pos = {chevX2, chevY2 }
-    mon.setCursorPos(math.floor(chev7pos[1]-2), math.floor(chev7pos[2]-1))
-    mon.write(" "..chevInfo[2].." ")
-  elseif chevInfo[1] == 8 then
-    chev8pos = {chevX1 + ((chevX2 - chevX1) /2) + 2, chevY2 }
-    mon.setCursorPos(math.floor(chev8pos[1]-1), math.floor(chev8pos[2]))
-    mon.write(" "..chevInfo[2].." ")
-  elseif chevInfo[1] == 9 then
-    chev9pos = {chevX1 + ((chevX2 - chevX1) /2) - 2, chevY2 }
-    --mon.setCursorPos(math.floor(chev9pos[1]-1), chevY1 + ((chevY2 - chevY1) / 2))
-    mon.setCursorPos(math.floor(chev9pos[1]-1), math.floor(chev9pos[2]))
-    mon.write(" "..chevInfo[2].." ")
-	mon.setBackgroundColor(colors.black)
-  end
+function drawChev(chevInfo)
+	mon.setBackgroundColor(colors.gray)
+	local x, y = mon.getSize()
+	local chevX1 = x / 3
+	local chevX2 = x / 3 * 2 + 1
+	local chevY1 = y / 3 - 2
+	local chevY2 = y / 3 * 2 + 2
+	if chevInfo[1] == 1 then
+		local chev1pos = {chevX1, chevY2}
+		mon.setBackgroundColor(colors.gray)
+		mon.setCursorPos(math.floor(chev1pos[1]), math.floor(chev1pos[2]) - 1)
+		mon.write(" " .. chevInfo[2] .. " ")
+	elseif chevInfo[1] == 2 then
+		local chev2pos = {chevX1, chevY1 + ((chevY2 - chevY1) / 2)}
+		mon.setCursorPos(math.floor(chev2pos[1] - 1), math.floor(chev2pos[2]))
+		mon.write(" " .. chevInfo[2] .. " ")
+	elseif chevInfo[1] == 3 then
+		local chev3pos = {chevX1, chevY1}
+		mon.setCursorPos(math.floor(chev3pos[1]), math.floor(chev3pos[2] + 1))
+		mon.write(" " .. chevInfo[2] .. " ")
+	elseif chevInfo[1] == 4 then
+		local chev4pos = {chevX1 + ((chevX2 - chevX1) / 2), chevY1}
+		mon.setCursorPos(math.floor(chev4pos[1] - 1), math.floor(chev4pos[2]))
+		mon.write(" " .. chevInfo[2] .. " ")
+	elseif chevInfo[1] == 5 then
+		local chev5pos = {chevX2, chevY1}
+		mon.setCursorPos(math.floor(chev5pos[1] - 2), math.floor(chev5pos[2]) + 1)
+		mon.write(" " .. chevInfo[2] .. " ")
+	elseif chevInfo[1] == 6 then
+		local chev6pos = {chevX2, chevY1 + ((chevY2 - chevY1) / 2)}
+		mon.setCursorPos(math.floor(chev6pos[1] - 1), math.floor(chev6pos[2]))
+		mon.write(" " .. chevInfo[2] .. " ")
+	elseif chevInfo[1] == 7 then
+		local chev7pos = {chevX2, chevY2}
+		mon.setCursorPos(math.floor(chev7pos[1] - 2), math.floor(chev7pos[2] - 1))
+		mon.write(" " .. chevInfo[2] .. " ")
+	elseif chevInfo[1] == 8 then
+		local  chev8pos = {chevX1 + ((chevX2 - chevX1) / 2) + 2, chevY2}
+		mon.setCursorPos(math.floor(chev8pos[1] - 1), math.floor(chev8pos[2]))
+		mon.write(" " .. chevInfo[2] .. " ")
+	elseif chevInfo[1] == 9 then
+		local chev9pos = {chevX1 + ((chevX2 - chevX1) /2) - 2, chevY2}
+		--mon.setCursorPos(math.floor(chev9pos[1]-1), chevY1 + ((chevY2 - chevY1) / 2))
+		mon.setCursorPos(math.floor(chev9pos[1] - 1), math.floor(chev9pos[2]))
+		mon.write(" " .. chevInfo[2] .. " ")
+		mon.setBackgroundColor(colors.black)
+	end
 end
 
 function drawSgStatus(status) -- draws stargate status
