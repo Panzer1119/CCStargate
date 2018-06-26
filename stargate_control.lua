@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 01:58 PM
+  Date: Edited 26 Jun 2018 - 02:42 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -67,6 +67,8 @@ function loadAll()
 	loadSettings()
 end
 
+-- Functions for searching an array for a table START
+
 function getId(entry)
 	if (entry ~= nil) then
 		return entry.id
@@ -74,6 +76,24 @@ function getId(entry)
 		return nil
 	end
 end
+
+function getName(entry)
+	if (entry ~= nil) then
+		return entry.name
+	else
+		return nil
+	end
+end
+
+function getAddress(entry)
+	if (entry ~= nil) then
+		return entry.address
+	else
+		return nil
+	end
+end
+
+-- Functions for searching an array for a table END
 
 function alarmSet(state)
 	if (settings.alarmOutputSides ~= and #settings.alarmOutputSides >= 1) then
@@ -576,6 +596,7 @@ function drawBookmarksPage()
 		end
 	end
 	local energyAvailable = sg.energyAvailable()
+	loadBookmarks()
 	for i = 1, y do
 		if (i % 2 == 1) then
 			mon.setBackgroundColor(colors.lightBlue)
@@ -623,91 +644,91 @@ function drawBookmarksPage()
 end
 
 function drawRemoteIris()
-  mon.setBackgroundColor(colors.black)
-  x,y = mon.getSize()
-  mon.setCursorPos(x/2-1, y/2+4)
-  mon.write("IRIS.")
+	mon.setBackgroundColor(colors.black)
+	local x, y = mon.getSize()
+	mon.setCursorPos(x / 2 - 1, y / 2 + 4)
+	mon.write("IRIS.")
 end
 
 function inputPage(type)
-  mon.clear()
-  term.redirect(mon)
-  term.setBackgroundColor(colors.lightGray)
-  term.setTextColor(colors.white)
-  term.clear()
-  x,y = term.getSize()
-  term.setCursorPos(x/2-8, y/2-2)
-  print("Set an address name")
-  term.setCursorPos(x/2 - 4, y/2)
-  print("         ")
-  term.setCursorPos(x/2 - 4, y/2)
-  nameInput = read()
-  addressInput = "nil"
-  term.setBackgroundColor(colors.lightGray)
-  term.clear()
-  term.setCursorPos(x/2-9, y/2-4)
-  print("Enter Stargate address")
-  --if type == "secEntry" then
-  --  term.setCursorPos(x/2-10, y/2-2)
-  --  print("DO NOT ENTER ANY HYPHONS")
-  --end
-  term.setBackgroundColor(colors.black)
-  term.setCursorPos(x/2 - 5, y/2)
-  print("           ")
-  term.setCursorPos(x/2 - 5, y/2)
-  addressInput = string.upper(string.gsub(read(), "-", "")) --Changed this
-  newGate ={name = nameInput, address = addressInput, mode = security_none}
-  term.redirect(term.native())
-  return newGate
+	mon.clear()
+	term.redirect(mon)
+	term.setBackgroundColor(colors.lightGray)
+	term.setTextColor(colors.white)
+	term.clear()
+	local x, y = term.getSize()
+	term.setCursorPos(x / 2 - 8, y / 2 - 2)
+	print("Set an address name")
+	term.setCursorPos(x / 2 - 4, y / 2)
+	print("         ")
+	term.setCursorPos(x / 2 - 4, y / 2)
+	nameInput = read()
+	addressInput = "nil"
+	term.setBackgroundColor(colors.lightGray)
+	term.clear()
+	term.setCursorPos(x / 2 - 9, y / 2 - 4)
+	print("Enter Stargate address")
+	--if type == "secEntry" then
+	--  term.setCursorPos(x/2-10, y/2-2)
+	--  print("DO NOT ENTER ANY HYPHONS")
+	--end
+	term.setBackgroundColor(colors.black)
+	term.setCursorPos(x / 2 - 5, y / 2)
+	print("           ")
+	term.setCursorPos(x / 2 - 5, y / 2)
+	addressInput = string.upper(string.gsub(read(), "-", "")) --Changed this
+	newGate = {name = nameInput, address = addressInput, mode = security_none, id = -1}
+	term.redirect(term.native())
+	return newGate
 end
 
 function drawRemoteAddress()
-  mon.setBackgroundColor(colors.black)
-  x,y = mon.getSize()
-  mon.setCursorPos((x/2+1) - string.len(sg.remoteAddress())/2, y/2-2)
-  mon.write(sg.remoteAddress())
-  ff = false -- Changed from this
-  for i = 1, 16, 1 do
-	if fs.exists(tostring(i)) then
-		file = fs.open(tostring(i), "r")
-		gateData = textutils.unserialize(file.readAll())
-		file.close()
-		found = false
-		name = ""
-		for k, v in pairs(gateData) do
-			if k == "address" then
-				if v == sg.remoteAddress() then
-					found = true
+	mon.setBackgroundColor(colors.black)
+	local x, y = mon.getSize()
+	mon.setCursorPos((x / 2 + 1) - string.len(sg.remoteAddress()) / 2, y / 2 - 2)
+	mon.write(sg.remoteAddress())
+	ff = false -- Changed from this
+	for i = 1, 16, 1 do
+		if (fs.exists(tostring(i))) then
+			file = fs.open(tostring(i), "r")
+			gateData = textutils.unserialize(file.readAll())
+			file.close()
+			found = false
+			name = ""
+			for k, v in pairs(gateData) do
+				if k == "address" then
+					if v == sg.remoteAddress() then
+						found = true
+					end
+				elseif k == "name" then
+					name = v
 				end
-			elseif k == "name" then
-				name = v
 			end
-		end
-		if found == true then
-			mon.setCursorPos((x/2+1) - string.len(name)/2, y/2)
-			mon.write(name)
-			ff = true
-			break
-		end
-	end
-  end
-  if ff == false then
-	if fs.exists("secList") then
-		file = fs.open("secList", "r")
-		secInfo = textutils.unserialize(file.readAll())
-		file.close()
-		if string.len(textutils.serialize(secInfo)) > 7 then
-			for k, v in pairs(secInfo) do
-				if v.address == sg.remoteAddress() then
-					mon.setCursorPos((x/2+1) - string.len(v.name)/2, y/2)
-					mon.write(v.name)
-					ff = true
-					break
-				end
+			if found == true then
+				mon.setCursorPos((x/2+1) - string.len(name)/2, y/2)
+				mon.write(name)
+				ff = true
+				break
 			end
 		end
 	end
-  end  -- till this
+	if (not ff) then
+		if (fs.exists("secList")) then
+			file = fs.open("secList", "r")
+			secInfo = textutils.unserialize(file.readAll())
+			file.close()
+			if string.len(textutils.serialize(secInfo)) > 7 then
+				for k, v in pairs(secInfo) do
+					if v.address == sg.remoteAddress() then
+						mon.setCursorPos((x/2+1) - string.len(v.name)/2, y/2)
+						mon.write(v.name)
+						ff = true
+						break
+					end
+				end
+			end
+		end
+	end  -- till this
 end
 
 function drawHistoryButton()
