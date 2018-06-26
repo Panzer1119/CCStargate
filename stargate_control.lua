@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 05:40 PM
+  Date: Edited 26 Jun 2018 - 05:50 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -762,9 +762,13 @@ end
 function addToHistory(address, incoming)
 	loadHistory()
 	if (incoming) then
-		table.insert(history.incoming, 1, address)
+		if (not utils.arrayContains(history.incoming, address)) then
+			table.insert(history.incoming, 1, address)
+		end
 	else
-		table.insert(history.outgoing, 1, address)
+		if (not utils.arrayContains(history.outgoing, address)) then
+			table.insert(history.outgoing, 1, address)
+		end
 	end
 	saveHistory()
 end
