@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 10:31 PM
+  Date: Edited 26 Jun 2018 - 10:39 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -955,6 +955,9 @@ while true do
 			loadSettings()
 			settings.irisState = irisState
 			saveSettings()
+			if (sg.stargateState() == "Connected") then
+				sg.sendMessage(irisState)
+			end
 		elseif (param2 >= 2 and param2 <= 4 and param3 >= y / 3 - 2 and param3 <= y / 3 * 2 + 1) then -- click has opened the security menu
 			menu = "security"
 			local sOK = forceIrisState(false)
