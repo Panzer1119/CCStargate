@@ -604,8 +604,7 @@ function drawHome(state) -- draws the home screen
 	drawTime()
 	drawPowerBar()
 	drawChevrons()
-	local status, int = sg.stargateState()
-	drawSgStatus(tostring(status))
+	drawSgStatus(state)
 	drawHistoryButton()
 	if (sg.irisState()  == "Open") then
 		drawIris(false)
