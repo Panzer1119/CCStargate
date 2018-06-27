@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 26 Jun 2018 - 10:39 PM
+  Date: Edited 27 Jun 2018 - 02:39 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -30,13 +30,12 @@ sg = peripheral.find("stargate")
 
 mon.setBackgroundColor(colors.black)
 mon.clear()
-maxEng = 50000
 dialling = {}
 menu = ""
 
 bookmarks = {}
 security = {}
-settings = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}}
+settings = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}, maxEnergy = 50000}
 history = {incoming = {}, outgoing = {}}
 
 filename_bookmarks = "stargate/bookmarks.lon"
@@ -68,7 +67,7 @@ end
 
 function loadSettings()
 	if (not fs.exists(filename_settings)) then
-		settings = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}}
+		settings = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}, maxEnergy = 50000}
 		saveSettings()
 	end
 	settings = utils.readTableFromFile(filename_settings)
@@ -179,10 +178,24 @@ function alarmSet(state)
 		utils.resetAllRedstoneOutputs()
 	end
 end
+
+function formatRFEnergy(energy)
+	local temp = ""
+	if (energy < 1000) then
+		temp = string.sub(tostring(energy), 1, 5)
+	elseif (energy < 1000000) then
+		temp = string.sub(tostring(energy / 1000), 1, 5) .. " k"
+	elseif (energy < 1000000000) then
+		temp = string.sub(tostring(energy / 1000000), 1, 5) .. " M"
+	elseif (energy < 1000000000000) then
+		temp = string.sub(tostring(energy / 1000000000), 1, 5) .. " G"
+	end
+	return temp .. "RF"
+end
   
 function drawPowerBar() -- checks power levels and writes power bar to monitor
 	local x, y = mon.getSize()
-	local engPercent = (sg.energyAvailable() / (maxEng + 1)) * 100 -- returns percent
+	local engPercent = (sg.energyAvailable() / ((settings.maxEnergy == nil and 50000 or settings.maxEnergy) + 1)) * 100 -- returns percent
 	for i = y, (y - y / 100 * engPercent), -1 do
 		mon.setCursorPos(x - 2,i)
 		if i > y / 4 * 3 then 
@@ -201,8 +214,8 @@ function drawPowerBar() -- checks power levels and writes power bar to monitor
 		mon.write("  ")
 	end
 	mon.setBackgroundColor(colors.black)
-	mon.setCursorPos(x - 11,y)
-	mon.write(math.floor(sg.energyAvailable() * 80 / 1000) .. "k RF ")
+	mon.setCursorPos(x - 11, y)
+	mon.write(formatRFEnergy(sg.energyAvailable() * 80))
 end
 
 function drawTime()
@@ -381,7 +394,7 @@ function drawIris(state) --draws button to control the Iris
 	mon.setBackgroundColor(colors.lightGray)
 	--ok, result = pcall(sg.openIris)
 	local ok = forceIrisState(false)
-	if (ok == nil or not ok) then
+	if (sg.irisState() == "Offline" or ok == nil or not ok) then
 		mon.setTextColor(colors.red)
 	elseif (state) then
 		sg.closeIris()
@@ -614,14 +627,14 @@ function updateBookmarksPage()
 				mon.setCursorPos(x / 2 - 3, i)
 				mon.write(bookmark.address)
 				]]--
-				mon.setCursorPos(x / 2 + 8, i)
+				mon.setCursorPos(x / 2 + 10, i)
 				if (ok) then
 					if (energyAvailable >= energyNeeded) then
 						mon.setTextColor(colors.green)
 					else
 						mon.setTextColor(colors.red)
 					end
-					mon.write(math.floor(energyNeeded * 80 / 1000) .. "k RF")
+					mon.write(formatRFEnergy(energyNeeded * 80))
 				else
 					mon.setCursorPos(x / 2 + 10, i)
 					mon.setTextColor(colors.white)
@@ -683,14 +696,14 @@ function drawBookmarksPage()
 			mon.write(bookmark.name)
 			mon.setCursorPos(x / 2 - 3, i)
 			mon.write(bookmark.address)
-			mon.setCursorPos(x/2 + 8, i)
+			mon.setCursorPos(x / 2 + 10, i)
 			if (ok) then
 				if (energyAvailable >= energyNeeded) then
 					mon.setTextColor(colors.green)
 				else
 					mon.setTextColor(colors.red)
 				end
-				mon.write(math.floor(energyNeeded * 80 / 1000).."k RF")
+				mon.write(formatRFEnergy(energyNeeded * 80))
 			else
 				mon.setCursorPos(x / 2 + 10, i)
 				mon.setTextColor(colors.white)
