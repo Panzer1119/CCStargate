@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 27 Jun 2018 - 02:39 AM
+  Date: Edited 27 Jun 2018 - 02:54 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -765,6 +765,9 @@ function drawRemoteAddress()
 	if (address ~= nil and address ~= "") then
 		mon.setBackgroundColor(colors.black)
 		local x, y = mon.getSize()
+		local state, engaged, direction = sg.stargateState()
+		mon.setCursorPos((x / 2 + 1) - string.len(direction) / 2, y / 2 - 4)
+		mon.write(direction)
 		mon.setCursorPos((x / 2 + 1) - string.len(address) / 2, y / 2 - 2)
 		mon.write(address)
 		loadBookmarks()
