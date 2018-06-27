@@ -354,6 +354,9 @@ function drawChev(chevInfo)
 end
 
 function drawSgStatus(status) -- draws stargate status
+	if (status == nil) then
+		status = sg.stargateState()
+	end
 	if (status ~= "Idle") then
 		--term.setCursorPos(1, 2)
 		--write(status) --needed for sting length because string.len() won't work with stargateStatus()
