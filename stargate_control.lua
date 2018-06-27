@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 27 Jun 2018 - 03:25 AM
+  Date: Edited 27 Jun 2018 - 04:00 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -778,6 +778,26 @@ function inputPage()
 	return newGate
 end
 
+function directInput()
+	mon.clear()
+	term.redirect(mon)
+	term.setBackgroundColor(colors.lightGray)
+	term.setTextColor(colors.white)
+	term.clear()
+	local x, y = term.getSize()
+	term.setCursorPos(x / 2 - 5, y / 2 - 2)
+	print("Direct Dial")
+	term.setCursorPos(x / 2 - 9, y / 2 - 4)
+	print("Enter Stargate address")
+	term.setBackgroundColor(colors.black)
+	term.setCursorPos(x / 2 - 5, y / 2)
+	print("           ")
+	term.setCursorPos(x / 2 - 5, y / 2)
+	local address = string.upper(string.gsub(read(), "-", ""))
+	term.redirect(term.native())
+	return address
+end
+
 function drawRemoteAddress()
 	local address = sg.remoteAddress()
 	if (address ~= nil and address ~= "") then
@@ -950,6 +970,30 @@ function forceIrisState(draw)
 	end
 end
 
+function directDial()
+	local address = directInput()
+	if (address ~= nil and address ~= "") then
+		drawHome("Dialing")
+		local energyNeeded = sg.energyToDial(address)
+		local energyAvailable = sg.energyAvailable()
+		if (energyNeeded > energyAvailable) then
+			drawSgStatus("No Energy")
+		else
+			local ok, result = pcall(sg.dial, address)
+			if (ok) then
+				local status, int = sg.stargateState()
+				drawSgStatus(status)
+				addToHistory(address, false)
+			else
+				drawSgStatus("Error")
+			end
+		end
+	else
+		drawHome()
+		resetTimer()
+	end
+end
+
 loadAll()
 
 if (settings.irisOnIncomingDial == nil) then
@@ -972,7 +1016,9 @@ while true do
 		resetTimer()
 	elseif (event == "monitor_touch") then
 		local x, y = mon.getSize()
-		if (param2 >= 6 and param2 <= 8 and param3 >= y / 3 - 2 and param3 <= y / 3 * 2 + 1) then -- opens or closes the Iris
+		if (param2 >= 15 and param2 <= 26 and param3 >= 6 and param3 <= y - 7) then -- direct dial
+			directDial()
+		elseif (param2 >= 6 and param2 <= 8 and param3 >= y / 3 - 2 and param3 <= y / 3 * 2 + 1) then -- opens or closes the Iris
 			if (sg.irisState() == "Closed") then
 				local ok = sg.openIris()
 				if (ok) then
@@ -1023,13 +1069,16 @@ while true do
 							end
 						elseif (param2 > x - 3) then -- delete record
 							loadSecurity()
-							table.remove(security, param3)
-							saveSecurity()
-							drawSecurityPageTop()
+							local index = utils.getTableIndexFromArray(security, param3, getId)
+							if (index ~= nil) then
+								table.remove(security, index)
+								saveSecurity()
+								drawSecurityPageTop()
+							end
 						elseif (param2 > x - 8 and param2 < x - 3) then -- click has changed the security type, cycles through "ALLOW", "DENY", "NONE"
 							loadSecurity()
 							for k, v in pairs(security) do
-								if (k == param3) then
+								if (v.id == param3) then
 									if (v.mode == security_allow) then
 										v.mode = security_deny
 									elseif (v.mode == security_deny) then
@@ -1045,13 +1094,22 @@ while true do
 							--drawSecurityPageBottom(security_deny)
 						elseif (param3 < y - 2) then -- check if empty, if so add new entry
 							loadSecurity()
-							local gate = inputPage()
-							gate.id = #security + 1
-							table.insert(security, 1, gate)
-							saveSecurity()
-							drawSecurityPageTop()
-							drawSecurityPageBottom(settings.irisOnIncomingDial)
-							--drawSecurityPageBottom(security_deny)
+							local gate = utils.getTableFromArray(security, param3, getId)
+							if (gate == nil) then
+								gate = inputPage()
+								if (gate.address ~= nil and gate.address ~= "") then
+									gate.id = param3
+									table.insert(security, 1, gate)
+									saveSecurity()
+									drawSecurityPageTop()
+									drawSecurityPageBottom(settings.irisOnIncomingDial)
+									--drawSecurityPageBottom(security_deny)
+								else
+									drawSecurityPageTop()
+									drawSecurityPageBottom(settings.irisOnIncomingDial)
+									--drawSecurityPageBottom(security_deny)
+								end
+							end
 						end
 					elseif (event ~= "timer") then -- if an event that isn't a users touch happens the screen will return to the home screen (in case of incoming connection)
 						drawHome()
@@ -1076,10 +1134,13 @@ while true do
 							break
 						elseif (param2 > x - 2) then -- user clicked delete on a bookmark
 							loadBookmarks()
-							table.remove(bookmarks, utils.getTableIndexFromArray(bookmarks, param3, getId))
-							saveBookmarks()
-							drawBookmarksPage()
-							resetTimer()
+							local index = utils.getTableIndexFromArray(bookmarks, param3, getId)
+							if (index ~= nil) then
+								table.remove(bookmarks, index)
+								saveBookmarks()
+								drawBookmarksPage()
+								resetTimer()
+							end
 						else -- user has clicked on a bookmark
 							loadBookmarks()
 							local gate = utils.getTableFromArray(bookmarks, param3, getId)
@@ -1101,13 +1162,17 @@ while true do
 								end
 								break
 							else
-								gate = inputPage()
-								gate.id = param3
-								table.insert(bookmarks, 1, gate)
-								saveBookmarks()
-								drawBookmarksPage()
-								resetTimer()
-								break
+								local gate = inputPage()
+								if (gate.address ~= nil and gate.address ~= "") then
+									gate.id = param3
+									table.insert(bookmarks, 1, gate)
+									saveBookmarks()
+									drawBookmarksPage()
+									resetTimer()
+									break
+								else
+									drawBookmarksPage()
+								end
 							end
 						end
 					elseif (event ~= "timer") then
