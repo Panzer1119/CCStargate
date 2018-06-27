@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 27 Jun 2018 - 02:54 AM
+  Date: Edited 27 Jun 2018 - 03:25 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control.lua
   
@@ -361,7 +361,7 @@ function drawSgStatus(status) -- draws stargate status
 		local xc = string.len(status)
 		term.clear()
 		term.setCursorPos(1, 2)
-		write("> ")
+		--write("> ")
 		if (xc % 2 == 1) then
 			xc = xc + 1
 			even = true
@@ -386,6 +386,8 @@ function drawSgStatus(status) -- draws stargate status
 		if (even) then
 			mon.write(" ")
 		end
+	elseif (status_ == "Idle") then
+		drawDirectDial()
 	end
 end
 
@@ -457,14 +459,28 @@ function drawTerm() -- draws the button to terminate the stargate connection to 
 			else
 				mon.setBackgroundColor(colors.gray)
 			end
-			mon.setCursorPos(xc,yc)
+			mon.setCursorPos(xc, yc)
 			mon.write(" ")
 		end
 	end
 	mon.setCursorPos(x / 2 + 3, y - 2)
 	mon.setTextColor(colors.black)
 	mon.write("TERM")
-end 
+end
+
+function drawDirectDial()
+	local x, y = mon.getSize()
+	mon.setBackgroundColor(colors.lightGray)
+	for yc = y - 11, y - 9 do
+		for xc = x / 2 - 3, x / 2 + 4 do
+			mon.setCursorPos(xc, yc)
+			mon.write(" ")
+		end
+	end
+	mon.setCursorPos(x / 2 - 2, y - 10)
+	mon.setTextColor(colors.black)
+	mon.write("DIRECT")
+end
 
 function securityButton() -- draws the button to access the security menu
 	local x, y = mon.getSize()
@@ -572,7 +588,7 @@ function drawSecurityPageBottom(listType) -- draws the buttons at the bottom of 
 	mon.setBackgroundColor(colors.black)
 end  
 
-function drawHome() -- draws the home screen
+function drawHome(state) -- draws the home screen
 	menu = "main"
 	mon.setBackgroundColor(colors.black)
 	local x, y = mon.getSize()
@@ -1066,7 +1082,7 @@ while true do
 							loadBookmarks()
 							local gate = utils.getTableFromArray(bookmarks, param3, getId)
 							if (gate ~= nil) then
-								drawHome() -- Changed energy checkup before dialing (by Panzer1119)
+								drawHome("Dialing") -- Changed energy checkup before dialing (by Panzer1119)
 								local energyNeeded = sg.energyToDial(gate.address)
 								local energyAvailable = sg.energyAvailable()
 								if (energyNeeded > energyAvailable) then
