@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 30 Jun 2018 - 00:06 AM
+  Date: Edited 30 Jun 2018 - 00:09 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -16,9 +16,11 @@ x, y = term.getSize() -- Pocket Computers are always x=26 and y=20
 sg = {	energyAvailable=function() return (50000 * (5/7)) end,
 		localAddress=function() return "DLDBTG5IB" end,
 		irisState=function() return "Offline" end,
-		stargateState=function() return "Idle" end}
+		stargateState=function() return "Idle" end
+	}
 
-menu = ""
+menu_main = "main"
+menu = nil
 
 bookmarks = {}
 security = {}
@@ -126,6 +128,12 @@ end
 
 --------- Iris Functions END
 
+function drawMenu(menu_)
+	if (menu_ == menu_main) then
+		drawMainPage()
+	end
+end
+
 ------------------ Main Page START
 
 function drawMainPage(address)
@@ -139,6 +147,7 @@ function drawMainPage(address)
 	drawCopyRight()
 	drawDialButton()
 	drawTermButton()
+	menu = menu_main
 end
 
 function drawTime()
@@ -378,5 +387,5 @@ end
 
 -- ######### Test
 term.clear()
-drawMainPage()
+drawMenu(menu_main)
 term.setCursorPos(1, y)
