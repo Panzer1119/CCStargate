@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Created 29 Jun 2018 - 10:00 PM
+  Date: Edited 30 Jun 2018 - 00:06 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
