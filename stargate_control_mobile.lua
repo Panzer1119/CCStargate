@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 02 Jul 2018 - 07:57 PM
+  Date: Edited 02 Jul 2018 - 08:23 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -13,18 +13,13 @@
 os.loadAPI("lib/security.lua")
 x, y = term.getSize() -- Pocket Computers are always x=26 and y=20
 
-sg = {	energyAvailable=function() return (50000 * (5/7)) end,
-		localAddress=function() return "DLDBTG5IB" end,
-		irisState=function() return "Offline" end,
-		stargateState=function() return "Idle" end
-	}
-	
----- Test START
-
 serverId = nil
 protocol = "stargate"
 side = "back"
 rednet.open(side)
+
+---- Test START
+
 sg = {
 stargateState = function()
 	if (not isConnected()) then
@@ -196,6 +191,8 @@ history = {incoming = {}, outgoing = {}}
 settings_local = {gate = nil}
 gates_local = {}
 gate_remote = nil
+index_list = 1
+list_active = false
 
 setting_showBookmarksRemote = true
 setting_showHistoryIncoming = true
@@ -448,6 +445,7 @@ end
 ------------------ Main Page START
 
 function drawMainPage(address)
+	list_active = false
 	drawTime()
 	drawLocalAddress()
 	if (isConnected()) then
@@ -785,8 +783,26 @@ end
 
 ------------------ Gates Page END
 
+function_printLocalGate = function(term, items, i, index_list)
+	local gate = items[i]
+	term.setCursorPos(1, i)
+	term.write(gate.address)
+	term.setCursorPos(math.max(11, x / 3 * 2 - (string.len(gate.name) / 2) - 1), i)
+	term.write(gate.name)
+	if (string.len(gate.name) <= 10) then
+		local id_ = tostring(gate.id)
+		local serverId_ = tostring(gate.serverId)
+		local temp = "[" .. id_ .. "|" .. serverId_ .. "]"
+		term.setCursorPos(x - string.len(temp) + 1, i)
+		term.write(temp)
+	end
+end
+
 function drawGatesPage()
 	loadSettingsLocal()
+	index_list = 1
+	drawList(gates_local, function_printLocalGate)
+	list_active = true
 	drawBackButton()
 	if (gate_remote) then
 		drawExtraButton("Disconnect")
@@ -830,6 +846,32 @@ function isExtraButtonPressed(xc, yc)
 	return xc >= 7 and yc >= (y - 2) and yc <= y
 end
 
+function drawList(items, function_format)
+	for yc = 1, y - 3 do
+		if ((yc + index_list - 1) % 2 == 1) then
+			term.setBackgroundColor(colors.lightBlue)
+		else
+			term.setBackgroundColor(colors.lightGray)
+		end
+		term.setCursorPos(1, yc)
+		term.write("                          ")
+	end
+	for i = 1, #items do
+		if ((i + index_list - 1) % 2 == 1) then
+			term.setBackgroundColor(colors.lightBlue)
+		else
+			term.setBackgroundColor(colors.lightGray)
+		end
+		term.setTextColor(colors.black)
+		if (function_format) then
+			pcall(function_format, term, items, i, index_list)
+		else
+			term.setCursorPos(1, i)
+			pcall(term.write, items[i])
+		end
+	end
+end
+
 -- ######### Test
 loadAll()
 term.clear()
@@ -843,7 +885,17 @@ while true do
 		resetTimer()
 	elseif (event == "mouse_click" and param_1 == 1) then
 		local connected = isConnected()
-		if (menu == menu_main) then
+		if (list_active and param_3 <= y - 3) then
+			if (menu == menu_gates) then
+				local gate = gates_local[param_3 + index_list - 1]
+				if (gate) then
+					loadSettingsLocal()
+					settings_local.gate = gate.id
+					saveSettingsLocal()
+					drawMenu(menu_main)
+				end
+			end
+		elseif (menu == menu_main) then
 			if (connected and isDefenseButtonPressed(param_2, param_3)) then
 				drawMenu(menu_security, colors.gray)
 			elseif (connected and isIrisButtonPressed(param_2, param_3)) then
@@ -867,6 +919,11 @@ while true do
 			elseif (menu == menu_dial) then
 				setting_showBookmarksRemote = not setting_showBookmarksRemote
 				update()
+			elseif (connected and menu == menu_gates) then
+				loadSettingsLocal()
+				settings_local.gate = nil
+				saveSettingsLocal()
+				drawMenu(menu_main)
 			end
 		elseif (isBackButtonPressed(param_2, param_3)) then
 			drawMenu(menu_main)
