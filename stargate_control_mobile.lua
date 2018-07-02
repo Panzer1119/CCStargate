@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 02 Jul 2018 - 08:23 PM
+  Date: Edited 03 Jul 2018 - 00:33 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -787,15 +787,8 @@ function_printLocalGate = function(term, items, i, index_list)
 	local gate = items[i]
 	term.setCursorPos(1, i)
 	term.write(gate.address)
-	term.setCursorPos(math.max(11, x / 3 * 2 - (string.len(gate.name) / 2) - 1), i)
+	term.setCursorPos(math.max(11, x / 3 * 2 - (string.len(gate.name) / 2) + 1), i)
 	term.write(gate.name)
-	if (string.len(gate.name) <= 10) then
-		local id_ = tostring(gate.id)
-		local serverId_ = tostring(gate.serverId)
-		local temp = "[" .. id_ .. "|" .. serverId_ .. "]"
-		term.setCursorPos(x - string.len(temp) + 1, i)
-		term.write(temp)
-	end
 end
 
 function drawGatesPage()
@@ -869,6 +862,10 @@ function drawList(items, function_format)
 			term.setCursorPos(1, i)
 			pcall(term.write, items[i])
 		end
+		term.setBackgroundColor(colors.red)
+		term.setTextColor(colors.black)
+		term.setCursorPos(x, i)
+		term.write("X")
 	end
 end
 
