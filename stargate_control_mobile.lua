@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 03 Jul 2018 - 00:43 AM
+  Date: Edited 03 Jul 2018 - 00:54 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -795,7 +795,6 @@ function drawGatesPage()
 	loadSettingsLocal()
 	index_list = 1
 	drawList(gates_local, function_printLocalGate)
-	list_active = true
 	drawBackButton()
 	if (gate_remote) then
 		drawExtraButton("Disconnect")
@@ -867,6 +866,7 @@ function drawList(items, function_format)
 		term.setCursorPos(x, i)
 		term.write("X")
 	end
+	list_active = true
 end
 
 -- ######### Test
@@ -877,12 +877,12 @@ term.setCursorPos(1, y)
 resetTimer()
 while true do
 	local event, param_1, param_2, param_3, param_4, param_5 = os.pullEvent()
-	if (event == "timer" and param_1 == timerId) then
+	if (event == "timer" and param_1 == timerId) then -- event timer for gui updating was triggered
 		update()
 		resetTimer()
-	elseif (event == "mouse_click" and param_1 == 1) then
+	elseif (event == "mouse_click" and param_1 == 1) then -- user mouse clicked the terminal
 		local connected = isConnected()
-		if (list_active and param_3 <= y - 3) then
+		if (list_active and param_3 <= y - 3) then -- when a list is shown via drawList, this if captures all mouse clicks 3 pixels over the bottom line
 			if (menu == menu_gates) then
 				local gate = gates_local[param_3 + index_list - 1]
 				if (gate) then
@@ -900,21 +900,21 @@ while true do
 				end
 			end
 		elseif (menu == menu_main) then
-			if (connected and isDefenseButtonPressed(param_2, param_3)) then
+			if (connected and isDefenseButtonPressed(param_2, param_3)) then -- user clicked the defense button
 				drawMenu(menu_security, colors.gray)
-			elseif (connected and isIrisButtonPressed(param_2, param_3)) then
+			elseif (connected and isIrisButtonPressed(param_2, param_3)) then -- user clicked the iris button
 				toggleIris()
-			elseif (connected and isHistoryButtonPressed(param_2, param_3)) then
+			elseif (connected and isHistoryButtonPressed(param_2, param_3)) then  -- user clicked the history button
 				drawMenu(menu_history, colors.gray)
-			elseif (connected and isDialButtonPressed(param_2, param_3) and sg.stargateState() == "Idle") then
+			elseif (connected and isDialButtonPressed(param_2, param_3) and sg.stargateState() == "Idle") then -- user clicked the dial button
 				drawMenu(menu_dial, colors.gray)
-			elseif (connected and isTermButtonPressed(param_2, param_3)) then
+			elseif (connected and isTermButtonPressed(param_2, param_3)) then -- user clicked the term button
 				sg.disconnect()
 				update()
-			elseif (isGatesButtonPressed(param_2, param_3)) then
+			elseif (isGatesButtonPressed(param_2, param_3)) then -- user clicked the gates button
 				drawMenu(menu_gates, colors.gray)
 			end
-		elseif (isExtraButtonPressed(param_2, param_3)) then
+		elseif (isExtraButtonPressed(param_2, param_3)) then -- user clicked on the extra button (besides the back button)
 			if (menu == menu_security) then
 				toggleIrisOnIncomingDial()
 				update()
@@ -930,7 +930,7 @@ while true do
 				saveSettingsLocal()
 				drawMenu(menu_main)
 			end
-		elseif (isBackButtonPressed(param_2, param_3)) then
+		elseif (isBackButtonPressed(param_2, param_3)) then -- user clicked the back button
 			drawMenu(menu_main)
 		end
 		resetTimer()
