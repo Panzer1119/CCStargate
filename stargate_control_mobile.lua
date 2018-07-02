@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 03 Jul 2018 - 00:54 AM
+  Date: Edited 03 Jul 2018 - 01:38 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -184,7 +184,7 @@ menu_dial = "dial"
 menu_gates = "gates"
 menu = nil
 
-bookmarks = {}
+bookmarks_remote = {}
 security = {}
 settings_remote = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}, maxEnergy = 50000}
 history = {incoming = {}, outgoing = {}}
@@ -214,8 +214,8 @@ end
 
 -- ########## LOAD BEGIN
 
-function loadBookmarks()
-	bookmarks = sg.loadBookmarks()
+function loadBookmarksRemote()
+	bookmarks_remote = sg.loadBookmarks()
 end
 
 function loadSecurity()
@@ -250,7 +250,7 @@ function loadGatesLocal()
 end
 
 function loadAll()
-	loadBookmarks()
+	loadBookmarksRemote()
 	loadSecurity()
 	loadSettingsRemote()
 	loadHistory()
@@ -262,7 +262,7 @@ end
 -- ########## SAVE BEGIN
 
 function saveBookmarks()
-	sg.saveBookmarks(bookmarks)
+	sg.saveBookmarks(bookmarks_remote)
 end
 
 function saveSecurity()
@@ -430,11 +430,11 @@ function drawMenu(menu_, color_back, clear)
 	elseif (menu_ == menu_security) then
 		drawSecurityPage()
 	elseif (menu_ == menu_history) then
-		drawHistoryPage()
+		drawHistoryPage(index_list)
 	elseif (menu_ == menu_dial) then
 		drawDialPage()
 	elseif (menu_ == menu_gates) then
-		drawGatesPage()
+		drawGatesPage(index_list)
 	end
 end
 
@@ -446,6 +446,7 @@ end
 
 function drawMainPage(address)
 	list_active = false
+	index_list = 1
 	drawTime()
 	drawLocalAddress()
 	if (isConnected()) then
@@ -478,6 +479,11 @@ function drawLocalAddress()
 	term.setCursorPos(x / 2 - 3, 2)
 	local address = sg.localAddress()
 	term.write(address and address or "Not connected")
+	loadSettingsLocal()
+	if (gate_remote) then
+		term.setCursorPos(1, 2)
+		term.write(gate_remote.name)
+	end
 end
 
 function drawPowerBar()
@@ -754,7 +760,57 @@ end
 
 ------------------ History Page END
 
-function drawHistoryPage()
+function_printHistoryIncoming = function(term, items, i, index_list)
+	local address = history.incoming[i + index_list - 1]
+	if (not address) then
+		return false
+	end
+	local gate_bookmark = getGateByAddress(bookmarks_remote, address)
+	local gate_security = getGateByAddress(security, address)
+	term.setCursorPos(1, i)
+	term.write(address)
+	term.setTextColor(colors.black)
+	if (not gate_bookmark) then
+		term.setBackgroundColor(colors.blue)
+		term.setCursorPos(x - 15, i)
+		term.write("SAVE")
+	elseif (not gate_security) then
+		term.setCursorPos(math.max(11, x / 3 * 2 - (string.len(gate_bookmark.name) / 2) - 1), i)
+		term.write(gate_bookmark.name)
+	end
+	if (not gate_security) then
+		term.setBackgroundColor(colors.red)
+		term.setCursorPos(x - 10, i)
+		term.write("BAN/ALLOW")
+	end
+	return true
+end
+
+function_printHistoryOutgoing = function(term, items, i, index_list)
+	local address = history.outgoing[i + index_list - 1]
+	if (not address) then
+		return false
+	end
+	local gate = getGateByAddress(bookmarks_remote, address)
+	term.setCursorPos(1, i)
+	term.write(address)
+	if (gate) then
+		term.setCursorPos(math.max(11, x / 3 * 2 - (string.len(gate.name) / 2) - 1), i)
+		term.write(gate.name)
+	end
+	return true
+end
+
+function drawHistoryPage(index_list_)
+	loadHistory()
+	loadBookmarksRemote()
+	loadSecurity()
+	index_list = index_list_ and index_list_ or 1
+	if (setting_showHistoryIncoming) then
+		drawList(history.incoming, function_printHistoryIncoming)
+	else
+		drawList(history.outgoing, function_printHistoryOutgoing)
+	end
 	drawBackButton()
 	if (setting_showHistoryIncoming) then
 		drawExtraButton("Incoming")
@@ -783,18 +839,24 @@ end
 
 ------------------ Gates Page END
 
-function_printLocalGate = function(term, items, i, index_list)
-	local gate = items[i]
+function_printGateLocal = function(term, items, i, index_list)
+	local gate = items[i + index_list - 1]
+	if (not gate) then
+		term.setCursorPos(x / 2 - 4, i)
+		term.write("Add Gate")
+		return "nox"
+	end
 	term.setCursorPos(1, i)
 	term.write(gate.address)
-	term.setCursorPos(math.max(11, x / 3 * 2 - (string.len(gate.name) / 2) + 1), i)
+	term.setCursorPos(math.max(11, x / 3 * 2 - (string.len(gate.name) / 2)), i)
 	term.write(gate.name)
+	return true
 end
 
-function drawGatesPage()
+function drawGatesPage(index_list_)
 	loadSettingsLocal()
-	index_list = 1
-	drawList(gates_local, function_printLocalGate)
+	index_list = index_list_ and index_list_ or 1
+	drawList(gates_local, function_printGateLocal)
 	drawBackButton()
 	if (gate_remote) then
 		drawExtraButton("Disconnect")
@@ -848,23 +910,26 @@ function drawList(items, function_format)
 		term.setCursorPos(1, yc)
 		term.write("                          ")
 	end
-	for i = 1, #items do
+	for i = 1, 17 do
 		if ((i + index_list - 1) % 2 == 1) then
 			term.setBackgroundColor(colors.lightBlue)
 		else
 			term.setBackgroundColor(colors.lightGray)
 		end
 		term.setTextColor(colors.black)
+		local ok = false
 		if (function_format) then
-			pcall(function_format, term, items, i, index_list)
+			run, ok = pcall(function_format, term, items, i, index_list)
 		else
 			term.setCursorPos(1, i)
-			pcall(term.write, items[i])
+			pcall(term.write, items[i + index_list - 1])
 		end
-		term.setBackgroundColor(colors.red)
-		term.setTextColor(colors.black)
-		term.setCursorPos(x, i)
-		term.write("X")
+		if (ok and ok ~= "nox") then
+			term.setBackgroundColor(colors.red)
+			term.setTextColor(colors.black)
+			term.setCursorPos(x, i)
+			term.write("X")
+		end
 	end
 	list_active = true
 end
@@ -920,9 +985,11 @@ while true do
 				update()
 			elseif (menu == menu_history) then
 				setting_showHistoryIncoming = not setting_showHistoryIncoming
+				index_list = 1
 				update()
 			elseif (menu == menu_dial) then
 				setting_showBookmarksRemote = not setting_showBookmarksRemote
+				index_list = 1
 				update()
 			elseif (connected and menu == menu_gates) then
 				loadSettingsLocal()
@@ -934,5 +1001,13 @@ while true do
 			drawMenu(menu_main)
 		end
 		resetTimer()
+	elseif (event == "mouse_scroll") then
+		if (list_active and param_3 <= y - 3) then -- when a list is shown via drawList, this if captures all mouse scrolls 3 pixels over the bottom line
+			if (menu == menu_gates) then
+				drawGatesPage(math.max(1, index_list + param_1))
+			elseif (menu == menu_history) then
+				drawHistoryPage(math.max(1, index_list + param_1))
+			end
+		end
 	end
 end
