@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 02 Jul 2018 - 06:32 PM
+  Date: Edited 02 Jul 2018 - 06:48 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -136,6 +136,9 @@ security = {}
 settings = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}, maxEnergy = 50000}
 history = {incoming = {}, outgoing = {}}
 
+setting_showBookmarksRemote = true
+setting_showHistoryIncoming = true
+
 --filename_bookmarks = "stargate/bookmarks.lon"
 --filename_security = "stargate/security.lon"
 --filename_settings = "stargate/settings.lon"
@@ -244,6 +247,18 @@ function isIrisMoving()
 	return state == "Opening" or state == "Closing"
 end
 
+function toggleIrisOnIncomingDial()
+	loadSettings()
+	if (settings.irisOnIncomingDial == security_deny) then
+		settings.irisOnIncomingDial = security_allow
+	elseif (settings.irisOnIncomingDial == security_allow) then
+		settings.irisOnIncomingDial = security_none			
+	elseif (settings.irisOnIncomingDial == security_none) then
+		settings.irisOnIncomingDial = security_deny
+	end
+	saveSettings()
+end
+
 --------- Iris Functions END
 
 function drawMenu(menu_, color_back, clear)
@@ -256,13 +271,9 @@ function drawMenu(menu_, color_back, clear)
 	elseif (menu_ == menu_security) then
 		drawSecurityPage()
 	elseif (menu_ == menu_history) then
-		--drawHistoryPage()
-		drawBackButton()
-		menu = menu_history
+		drawHistoryPage()
 	elseif (menu_ == menu_dial) then
-		--drawDialPage()
-		drawBackButton()
-		menu = menu_dial
+		drawDialPage()
 	end
 end
 
@@ -544,8 +555,15 @@ end
 ------------------ Security Page END
 
 function drawSecurityPage()
+	loadSettings()
 	drawBackButton()
-	drawExtraButton("Default")
+	if (settings.irisOnIncomingDial == security_allow) then
+		drawExtraButton(security_allow, colors.white, colors.black)
+	elseif (settings.irisOnIncomingDial == security_deny) then
+		drawExtraButton(security_deny, colors.black, colors.white)
+	elseif (settings.irisOnIncomingDial == security_none) then
+		drawExtraButton(security_none, colors.gray, colors.white)
+	end
 	menu = menu_security
 end
 
@@ -554,10 +572,30 @@ end
 
 ------------------ History Page END
 
+function drawHistoryPage()
+	drawBackButton()
+	if (setting_showHistoryIncoming) then
+		drawExtraButton("Incoming")
+	else
+		drawExtraButton("Outgoing")
+	end
+	menu = menu_history
+end
+
 ------------------ History Page END
 
 
 ------------------ Dial Page END
+
+function drawDialPage()
+	drawBackButton()
+	if (setting_showBookmarksRemote) then
+		drawExtraButton("Remote")
+	else
+		drawExtraButton("Local")
+	end
+	menu = menu_dial
+end
 
 ------------------ Dial Page END
 
@@ -583,7 +621,7 @@ function drawExtraButton(extra, color_back, color_text)
 	term.write("                    ")
 	term.setCursorPos(7, y - 1)
 	term.write("                    ")
-	term.setCursorPos(17 - (string.len(extra) / 2), y - 1)
+	term.setCursorPos(17 - (string.len(extra) / 2 - 1), y - 1)
 	term.write(extra)
 	term.setCursorPos(7, y)
 	term.write("                    ")
@@ -619,7 +657,14 @@ while true do
 			end
 		elseif (isExtraButtonPressed(param_2, param_3)) then
 			if (menu == menu_security) then
-				print("EXTRA")
+				toggleIrisOnIncomingDial()
+				update()
+			elseif (menu == menu_history) then
+				setting_showHistoryIncoming = not setting_showHistoryIncoming
+				update()
+			elseif (menu == menu_dial) then
+				setting_showBookmarksRemote = not setting_showBookmarksRemote
+				update()
 			end
 		elseif (isBackButtonPressed(param_2, param_3)) then
 			drawMenu(menu_main)
