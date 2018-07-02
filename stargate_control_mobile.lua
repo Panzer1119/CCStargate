@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 30 Jun 2018 - 05:02 AM
+  Date: Edited 02 Jul 2018 - 06:32 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -246,16 +246,15 @@ end
 
 --------- Iris Functions END
 
-function drawMenu(menu_)
-	if (menu ~= menu_) then
+function drawMenu(menu_, color_back, clear)
+	if (clear or menu ~= menu_) then
+		term.setBackgroundColor(color_back and color_back or colors.black)
 		term.clear()
 	end
 	if (menu_ == menu_main) then
 		drawMainPage()
 	elseif (menu_ == menu_security) then
-		--drawSecurityPage()
-		drawBackButton()
-		menu = menu_security
+		drawSecurityPage()
 	elseif (menu_ == menu_history) then
 		--drawHistoryPage()
 		drawBackButton()
@@ -267,8 +266,8 @@ function drawMenu(menu_)
 	end
 end
 
-function update()
-	drawMenu(menu)
+function update(color_back, clear)
+	drawMenu(menu, color_back, clear)
 end
 
 ------------------ Main Page START
@@ -544,6 +543,12 @@ end
 
 ------------------ Security Page END
 
+function drawSecurityPage()
+	drawBackButton()
+	drawExtraButton("Default")
+	menu = menu_security
+end
+
 ------------------ Secutiry Page END
 
 
@@ -560,47 +565,65 @@ function drawBackButton()
 	term.setBackgroundColor(colors.black)
 	term.setTextColor(colors.white)
 	term.setCursorPos(1, y - 2)
-	term.write("                          ")
+	term.write("      ")
 	term.setCursorPos(1, y - 1)
-	term.write("           BACK           ")
+	term.write(" BACK ")
 	term.setCursorPos(1, y)
-	term.write("                          ")
+	term.write("      ")
 end
 
 function isBackButtonPressed(xc, yc)
-	return yc >= (y - 2) and yc <= y
+	return xc <= 6 and yc >= (y - 2) and yc <= y
+end
+
+function drawExtraButton(extra, color_back, color_text)
+	term.setBackgroundColor(color_back and color_back or colors.lightGray)
+	term.setTextColor(color_text and color_text or colors.white)
+	term.setCursorPos(7, y - 2)
+	term.write("                    ")
+	term.setCursorPos(7, y - 1)
+	term.write("                    ")
+	term.setCursorPos(17 - (string.len(extra) / 2), y - 1)
+	term.write(extra)
+	term.setCursorPos(7, y)
+	term.write("                    ")
+end
+
+function isExtraButtonPressed(xc, yc)
+	return xc >= 7 and yc >= (y - 2) and yc <= y
 end
 
 -- ######### Test
 loadAll()
-
 term.clear()
 drawMenu(menu_main)
 term.setCursorPos(1, y)
 resetTimer()
 while true do
-	local event, param_1, param_2, param_3 = os.pullEvent()
+	local event, param_1, param_2, param_3, param_4, param_5 = os.pullEvent()
 	if (event == "timer" and param_1 == timerId) then
 		update()
 		resetTimer()
 	elseif (event == "mouse_click" and param_1 == 1) then
 		if (menu == menu_main) then
 			if (isDefenseButtonPressed(param_2, param_3)) then
-				--print("DEFENSE")
-				drawMenu(menu_security)
+				drawMenu(menu_security, colors.gray)
 			elseif (isIrisButtonPressed(param_2, param_3)) then
 				print("IRIS")
 			elseif (isHistoryButtonPressed(param_2, param_3)) then
-				--print("HISTORY")
-				drawMenu(menu_history)
+				drawMenu(menu_history, colors.gray)
 			elseif (isDialButtonPressed(param_2, param_3)) then
-				--print("DIAL")
-				drawMenu(menu_dial)
+				drawMenu(menu_dial, colors.gray)
 			elseif (isTermButtonPressed(param_2, param_3)) then
 				print("TERM")
+			end
+		elseif (isExtraButtonPressed(param_2, param_3)) then
+			if (menu == menu_security) then
+				print("EXTRA")
 			end
 		elseif (isBackButtonPressed(param_2, param_3)) then
 			drawMenu(menu_main)
 		end
+		resetTimer()
 	end
 end
