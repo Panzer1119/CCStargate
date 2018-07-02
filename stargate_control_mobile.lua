@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 02 Jul 2018 - 07:02 PM
+  Date: Edited 02 Jul 2018 - 07:57 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -21,102 +21,159 @@ sg = {	energyAvailable=function() return (50000 * (5/7)) end,
 	
 ---- Test START
 
-serverId = 19
+serverId = nil
 protocol = "stargate"
 side = "back"
 rednet.open(side)
 sg = {
 stargateState = function()
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="stargateState", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 energyAvailable = function()
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="energyAvailable", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 energyToDial = function(address)
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="energyToDial", args=address}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 localAddress = function()
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="localAddress", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 remoteAddress = function()
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="remoteAddress", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 dial = function(address)
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="dial", args=address}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 disconnect = function()
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="disconnect", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 irisState = function()
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="irisState", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 closeIris = function()
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="closeIris", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 openIris = function()
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="openIris", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 sendMessage = function(message)
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="sendMessage", args=message}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 loadBookmarks = function(message)
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="loadBookmarks", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 loadSecurity = function(message)
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="loadSecurity", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 loadSettings = function(message)
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="loadSettings", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 loadHistory = function(message)
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="loadHistory", args=nil}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 saveBookmarks = function(bookmarks)
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="saveBookmarks", args=bookmarks}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 saveSecurity = function(security)
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="saveSecurity", args=security}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 saveSettings = function(settings)
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="saveSettings", args=settings}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
 saveHistory = function(history)
+	if (not isConnected()) then
+		return nil
+	end
 	rednet.send(serverId, {call="saveHistory", args=history}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
@@ -136,8 +193,9 @@ bookmarks = {}
 security = {}
 settings_remote = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}, maxEnergy = 50000}
 history = {incoming = {}, outgoing = {}}
-settings = {gate = nil}
-gates = {}
+settings_local = {gate = nil}
+gates_local = {}
+gate_remote = nil
 
 setting_showBookmarksRemote = true
 setting_showHistoryIncoming = true
@@ -151,6 +209,11 @@ filename_gates = "stargate/gates.lon"
 security_allow = "ALLOW"
 security_deny = "DENY"
 security_none = "NONE"
+
+function isConnected()
+	loadSettingsLocal()
+	return gate_remote ~= nil and serverId ~= nil
+end
 
 -- ########## LOAD BEGIN
 
@@ -170,20 +233,23 @@ function loadHistory()
 	history = sg.loadHistory()
 end
 
-function loadSettings()
+function loadSettingsLocal()
 	if (not fs.exists(filename_settings)) then
-		settings = {gate = nil}
-		saveSettings()
+		settings_local = {gate = nil}
+		saveSettingsLocal()
 	end
-	settings = utils.readTableFromFile(filename_settings)
+	settings_local = utils.readTableFromFile(filename_settings)
+	loadGatesLocal()
+	gate_remote = getGateById(settings_local.gate)
+	serverId = gate_remote and gate_remote.serverId or nil
 end
 
-function loadGates()
+function loadGatesLocal()
 	if (not fs.exists(filename_gates)) then
-		gates = {}
+		gates_local = {}
 		saveGates()
 	end
-	gates = utils.readTableFromFile(filename_gates)
+	gates_local = utils.readTableFromFile(filename_gates)
 end
 
 function loadAll()
@@ -191,8 +257,8 @@ function loadAll()
 	loadSecurity()
 	loadSettingsRemote()
 	loadHistory()
-	loadSettings()
-	loadGates()
+	loadSettingsLocal()
+	loadGatesLocal()
 end
 
 -- ########## LOAD END
@@ -214,12 +280,12 @@ function saveHistory()
 	sg.saveHistory(history)
 end
 
-function saveSettings()
-	utils.writeTableToFile(filename_settings, settings)
+function saveSettingsLocal()
+	utils.writeTableToFile(filename_settings, settings_local)
 end
 
-function saveGates()
-	utils.writeTableToFile(filename_gates, gates)
+function saveGatesLocal()
+	utils.writeTableToFile(filename_gates, gates_local)
 end
 
 function saveAll()
@@ -227,11 +293,64 @@ function saveAll()
 	saveSecurity()
 	saveSettingsRemote()
 	saveHistory()
-	saveSettings()
-	saveGates()
+	saveSettingsLocal()
+	saveGatesLocal()
 end
 
 -- ########## SAVE END
+
+-- Functions for searching an array for a table BEGIN
+
+function getId(entry)
+	if (entry ~= nil) then
+		return entry.id
+	else
+		return nil
+	end
+end
+
+function getName(entry)
+	if (entry ~= nil) then
+		return entry.name
+	else
+		return nil
+	end
+end
+
+function getAddress(entry)
+	if (entry ~= nil) then
+		return entry.address
+	else
+		return nil
+	end
+end
+
+function getAddressShort(entry)
+	if (entry ~= nil and string.len(entry.address) >= 7) then
+		return string.sub(entry.address, 1, 7)
+	else
+		return nil
+	end
+end
+
+-- Functions for searching an array for a table END
+
+function getGateById(id)
+	return utils.getTableFromArray(gates_local, id, getId)
+end
+
+function getGateByAddress(gates_, address)
+	if (string.len(address) == 7) then
+		return utils.getTableFromArray(gates_, address, getAddressShort)
+	elseif (string.len(address) == 9) then
+		local gate = utils.getTableFromArray(gates_, address, getAddress)
+		if (gate == nil) then
+			gate = utils.getTableFromArray(gates_, string.sub(address, 1, 7), getAddressShort)
+		end
+		return gate
+	end
+	return nil
+end
 
 function formatRFEnergy(energy)
 	local temp = ""
@@ -291,6 +410,17 @@ function toggleIrisOnIncomingDial()
 	saveSettingsRemote()
 end
 
+function toggleIris()
+	while isIrisMoving() do
+		sleep(0.25)
+	end
+	if (isIrisClosed()) then
+		sg.openIris()
+	elseif (isIrisOpen()) then
+		sg.closeIris()
+	end
+end
+
 --------- Iris Functions END
 
 function drawMenu(menu_, color_back, clear)
@@ -320,7 +450,9 @@ end
 function drawMainPage(address)
 	drawTime()
 	drawLocalAddress()
-	drawPowerBar()
+	if (isConnected()) then
+		drawPowerBar()
+	end
 	drawDefenseButton()
 	drawIrisButton()
 	drawStargate(address)
@@ -346,7 +478,8 @@ function drawLocalAddress()
 	term.setCursorPos(x / 2 - 6, 1)
 	term.write("Stargate Address")
 	term.setCursorPos(x / 2 - 3, 2)
-	term.write(sg.localAddress())
+	local address = sg.localAddress()
+	term.write(address and address or "Not connected")
 end
 
 function drawPowerBar()
@@ -653,8 +786,13 @@ end
 ------------------ Gates Page END
 
 function drawGatesPage()
+	loadSettingsLocal()
 	drawBackButton()
-	drawExtraButton("Disconnect")
+	if (gate_remote) then
+		drawExtraButton("Disconnect")
+	else
+		drawExtraButton("")
+	end
 	menu = menu_gates
 end
 
@@ -704,16 +842,17 @@ while true do
 		update()
 		resetTimer()
 	elseif (event == "mouse_click" and param_1 == 1) then
+		local connected = isConnected()
 		if (menu == menu_main) then
-			if (isDefenseButtonPressed(param_2, param_3)) then
+			if (connected and isDefenseButtonPressed(param_2, param_3)) then
 				drawMenu(menu_security, colors.gray)
-			elseif (isIrisButtonPressed(param_2, param_3)) then
-				print("IRIS")
-			elseif (isHistoryButtonPressed(param_2, param_3)) then
+			elseif (connected and isIrisButtonPressed(param_2, param_3)) then
+				toggleIris()
+			elseif (connected and isHistoryButtonPressed(param_2, param_3)) then
 				drawMenu(menu_history, colors.gray)
-			elseif (isDialButtonPressed(param_2, param_3)) then
+			elseif (connected and isDialButtonPressed(param_2, param_3)) then
 				drawMenu(menu_dial, colors.gray)
-			elseif (isTermButtonPressed(param_2, param_3)) then
+			elseif (connected and isTermButtonPressed(param_2, param_3)) then
 				print("TERM")
 			elseif (isGatesButtonPressed(param_2, param_3)) then
 				drawMenu(menu_gates, colors.gray)
