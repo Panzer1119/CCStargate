@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 03 Jul 2018 - 00:33 AM
+  Date: Edited 03 Jul 2018 - 00:43 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -509,7 +509,7 @@ end
 function drawDefenseButton()
 	term.setBackgroundColor(colors.lightGray)
 	term.setTextColor(colors.black)
-	if (not hasIris()) then
+	if (not hasIris() or not isConnected()) then
 		term.setTextColor(colors.red)
 	end
 	local s = " DEFENSE "
@@ -529,7 +529,7 @@ end
 function drawIrisButton()
 	term.setBackgroundColor(colors.lightGray)
 	term.setTextColor(colors.black)
-	if (not hasIris()) then
+	if (not hasIris() or not isConnected()) then
 		term.setTextColor(colors.red)
 	elseif (isIrisClosed()) then
 		term.setTextColor(colors.blue)
@@ -886,10 +886,17 @@ while true do
 			if (menu == menu_gates) then
 				local gate = gates_local[param_3 + index_list - 1]
 				if (gate) then
-					loadSettingsLocal()
-					settings_local.gate = gate.id
-					saveSettingsLocal()
-					drawMenu(menu_main)
+					if (param_2 == x) then
+						loadGatesLocal()
+						table.remove(gates_local, utils.getTableIndexFromArray(gates_local, gate.id, getId))
+						saveGatesLocal()
+						update()
+					else
+						loadSettingsLocal()
+						settings_local.gate = gate.id
+						saveSettingsLocal()
+						drawMenu(menu_main)
+					end
 				end
 			end
 		elseif (menu == menu_main) then
@@ -899,10 +906,11 @@ while true do
 				toggleIris()
 			elseif (connected and isHistoryButtonPressed(param_2, param_3)) then
 				drawMenu(menu_history, colors.gray)
-			elseif (connected and isDialButtonPressed(param_2, param_3)) then
+			elseif (connected and isDialButtonPressed(param_2, param_3) and sg.stargateState() == "Idle") then
 				drawMenu(menu_dial, colors.gray)
 			elseif (connected and isTermButtonPressed(param_2, param_3)) then
-				print("TERM")
+				sg.disconnect()
+				update()
 			elseif (isGatesButtonPressed(param_2, param_3)) then
 				drawMenu(menu_gates, colors.gray)
 			end
