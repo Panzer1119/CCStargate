@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 02 Jul 2018 - 06:48 PM
+  Date: Edited 02 Jul 2018 - 07:02 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -129,20 +129,24 @@ menu_main = "main"
 menu_security = "security"
 menu_history = "history"
 menu_dial = "dial"
+menu_gates = "gates"
 menu = nil
 
 bookmarks = {}
 security = {}
-settings = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}, maxEnergy = 50000}
+settings_remote = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}, maxEnergy = 50000}
 history = {incoming = {}, outgoing = {}}
+settings = {gate = nil}
+gates = {}
 
 setting_showBookmarksRemote = true
 setting_showHistoryIncoming = true
 
 --filename_bookmarks = "stargate/bookmarks.lon"
 --filename_security = "stargate/security.lon"
---filename_settings = "stargate/settings.lon"
+filename_settings = "stargate/settings.lon"
 --filename_history = "stargate/history.lon"
+filename_gates = "stargate/gates.lon"
 
 security_allow = "ALLOW"
 security_deny = "DENY"
@@ -158,19 +162,37 @@ function loadSecurity()
 	security = sg.loadSecurity()
 end
 
-function loadSettings()
-	settings = sg.loadSettings()
+function loadSettingsRemote()
+	settings_remote = sg.loadSettings()
 end
 
 function loadHistory()
 	history = sg.loadHistory()
 end
 
+function loadSettings()
+	if (not fs.exists(filename_settings)) then
+		settings = {gate = nil}
+		saveSettings()
+	end
+	settings = utils.readTableFromFile(filename_settings)
+end
+
+function loadGates()
+	if (not fs.exists(filename_gates)) then
+		gates = {}
+		saveGates()
+	end
+	gates = utils.readTableFromFile(filename_gates)
+end
+
 function loadAll()
 	loadBookmarks()
 	loadSecurity()
-	loadSettings()
+	loadSettingsRemote()
 	loadHistory()
+	loadSettings()
+	loadGates()
 end
 
 -- ########## LOAD END
@@ -184,19 +206,29 @@ function saveSecurity()
 	sg.saveSecurity(security)
 end
 
-function saveSettings()
-	sg.saveSettings(settings)
+function saveSettingsRemote()
+	sg.saveSettings(settings_remote)
 end
 
 function saveHistory()
 	sg.saveHistory(history)
 end
 
+function saveSettings()
+	utils.writeTableToFile(filename_settings, settings)
+end
+
+function saveGates()
+	utils.writeTableToFile(filename_gates, gates)
+end
+
 function saveAll()
 	saveBookmarks()
 	saveSecurity()
-	saveSettings()
+	saveSettingsRemote()
 	saveHistory()
+	saveSettings()
+	saveGates()
 end
 
 -- ########## SAVE END
@@ -248,15 +280,15 @@ function isIrisMoving()
 end
 
 function toggleIrisOnIncomingDial()
-	loadSettings()
-	if (settings.irisOnIncomingDial == security_deny) then
-		settings.irisOnIncomingDial = security_allow
-	elseif (settings.irisOnIncomingDial == security_allow) then
-		settings.irisOnIncomingDial = security_none			
-	elseif (settings.irisOnIncomingDial == security_none) then
-		settings.irisOnIncomingDial = security_deny
+	loadSettingsRemote()
+	if (settings_remote.irisOnIncomingDial == security_deny) then
+		settings_remote.irisOnIncomingDial = security_allow
+	elseif (settings_remote.irisOnIncomingDial == security_allow) then
+		settings_remote.irisOnIncomingDial = security_none			
+	elseif (settings_remote.irisOnIncomingDial == security_none) then
+		settings_remote.irisOnIncomingDial = security_deny
 	end
-	saveSettings()
+	saveSettingsRemote()
 end
 
 --------- Iris Functions END
@@ -274,6 +306,8 @@ function drawMenu(menu_, color_back, clear)
 		drawHistoryPage()
 	elseif (menu_ == menu_dial) then
 		drawDialPage()
+	elseif (menu_ == menu_gates) then
+		drawGatesPage()
 	end
 end
 
@@ -292,6 +326,7 @@ function drawMainPage(address)
 	drawStargate(address)
 	drawHistoryButton()
 	drawCopyRight()
+	drawGatesButton()
 	drawDialButton()
 	drawTermButton()
 	menu = menu_main
@@ -315,9 +350,9 @@ function drawLocalAddress()
 end
 
 function drawPowerBar()
-	loadSettings()
+	loadSettingsRemote()
 	local energyAvailable = sg.energyAvailable()
-	local energyPercent = (energyAvailable / ((settings.maxEnergy == nil and 50000 or settings.maxEnergy) + 1)) * 100
+	local energyPercent = (energyAvailable / ((settings_remote.maxEnergy == nil and 50000 or settings_remote.maxEnergy) + 1)) * 100
 	for i = y, (y - (y * energyPercent / 100)), -1 do
 		if (i > (y * 3 / 4)) then
 			term.setBackgroundColor(colors.red)
@@ -509,6 +544,22 @@ function drawCopyRight()
 	term.write("Panzer1119")
 end
 
+function drawGatesButton()
+	term.setBackgroundColor(colors.lightGray)
+	term.setTextColor(colors.black)
+	for yc = (y - 4), (y - 2) do
+		term.setCursorPos(2, yc)
+		term.write("       ")
+	end
+	term.setTextColor(colors.black)
+	term.setCursorPos(3, y - 3)
+	term.write("GATES")
+end
+
+function isGatesButtonPressed(xc, yc)
+	return (xc >= 2 and xc <= 8) and (yc >= (y - 4) and yc <= (y - 2))
+end
+
 function drawDialButton()
 	local state, engaged, direction = sg.stargateState()
 	term.setBackgroundColor(colors.lightGray)
@@ -517,16 +568,16 @@ function drawDialButton()
 	end
 	term.setTextColor(colors.black)
 	for yc = (y - 4), (y - 2) do
-		term.setCursorPos(x / 2 - 5, yc)
+		term.setCursorPos(x / 2 - 3, yc)
 		term.write("      ")
 	end
 	term.setTextColor(colors.black)
-	term.setCursorPos(x / 2 - 4, y - 3)
+	term.setCursorPos(x / 2 - 2, y - 3)
 	term.write("DIAL")
 end
 
 function isDialButtonPressed(xc, yc)
-	return (xc >= 8 and xc <= 13) and (yc >= (y - 4) and yc <= (y - 2))
+	return (xc >= 10 and xc <= 15) and (yc >= (y - 4) and yc <= (y - 2))
 end
 
 function drawTermButton()
@@ -537,16 +588,16 @@ function drawTermButton()
 	end
 	term.setTextColor(colors.black)
 	for yc = (y - 4), (y - 2) do
-		term.setCursorPos(x / 2 + 2, yc)
+		term.setCursorPos(x / 2 + 4, yc)
 		term.write("      ")
 	end
 	term.setTextColor(colors.black)
-	term.setCursorPos(x / 2 + 3, y - 3)
+	term.setCursorPos(x / 2 + 5, y - 3)
 	term.write("TERM")
 end
 
 function isTermButtonPressed(xc, yc)
-	return (xc >= 15 and xc <= 20) and (yc >= (y - 4) and yc <= (y - 2))
+	return (xc >= 17 and xc <= 22) and (yc >= (y - 4) and yc <= (y - 2))
 end
 
 ------------------ Main Page END
@@ -555,13 +606,13 @@ end
 ------------------ Security Page END
 
 function drawSecurityPage()
-	loadSettings()
+	loadSettingsRemote()
 	drawBackButton()
-	if (settings.irisOnIncomingDial == security_allow) then
+	if (settings_remote.irisOnIncomingDial == security_allow) then
 		drawExtraButton(security_allow, colors.white, colors.black)
-	elseif (settings.irisOnIncomingDial == security_deny) then
+	elseif (settings_remote.irisOnIncomingDial == security_deny) then
 		drawExtraButton(security_deny, colors.black, colors.white)
-	elseif (settings.irisOnIncomingDial == security_none) then
+	elseif (settings_remote.irisOnIncomingDial == security_none) then
 		drawExtraButton(security_none, colors.gray, colors.white)
 	end
 	menu = menu_security
@@ -598,6 +649,16 @@ function drawDialPage()
 end
 
 ------------------ Dial Page END
+
+------------------ Gates Page END
+
+function drawGatesPage()
+	drawBackButton()
+	drawExtraButton("Disconnect")
+	menu = menu_gates
+end
+
+------------------ Gates Page END
 
 function drawBackButton()
 	term.setBackgroundColor(colors.black)
@@ -654,6 +715,8 @@ while true do
 				drawMenu(menu_dial, colors.gray)
 			elseif (isTermButtonPressed(param_2, param_3)) then
 				print("TERM")
+			elseif (isGatesButtonPressed(param_2, param_3)) then
+				drawMenu(menu_gates, colors.gray)
 			end
 		elseif (isExtraButtonPressed(param_2, param_3)) then
 			if (menu == menu_security) then
