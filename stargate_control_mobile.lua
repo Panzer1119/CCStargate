@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 03 Jul 2018 - 02:11 AM
+  Date: Edited 03 Jul 2018 - 02:29 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -414,11 +414,11 @@ function drawMenu(menu_, color_back, clear)
 	if (menu_ == menu_main) then
 		drawMainPage()
 	elseif (menu_ == menu_security) then
-		drawSecurityPage()
+		drawSecurityPage(index_list)
 	elseif (menu_ == menu_history) then
 		drawHistoryPage(index_list)
 	elseif (menu_ == menu_dial) then
-		drawDialPage()
+		drawDialPage(index_list)
 	elseif (menu_ == menu_gates) then
 		drawGatesPage(index_list)
 	end
@@ -728,7 +728,39 @@ end
 
 ------------------ Security Page START
 
-function drawSecurityPage()
+function_printBookmarkSecurity = function(term, items, i, index_list)
+	local bookmark = items[i + index_list - 1]
+	if (not bookmark) then
+		term.setCursorPos(x / 2 - 4, i)
+		term.write("Add Gate")
+		return "nox"
+	end
+	term.setCursorPos(1, i)
+	if (bookmark.name) then
+		term.write(bookmark.name)
+	else
+		term.write(bookmark.address)
+	end
+	term.setCursorPos(x - 7, i)
+	if (bookmark.mode == security_allow) then
+		term.setBackgroundColor(colors.white)
+		term.setTextColor(colors.black)
+	elseif (bookmark.mode == security_deny) then
+		term.setBackgroundColor(colors.black)
+		term.setTextColor(colors.white)
+	elseif (bookmark.mode == security_none) then
+		term.setBackgroundColor(colors.gray)
+		term.setTextColor(colors.white)
+	end
+	term.write(bookmark.mode) -- ALLOW, DENY, NONE
+	return true
+end
+
+function drawSecurityPage(index_list_)
+	loadBookmarksRemote()
+	energyAvailable = sg.energyAvailable()
+	index_list = index_list_ and index_list_ or 1
+	drawList(bookmarks_remote, function_printBookmarkSecurity)
 	loadSettingsRemote()
 	drawBackButton()
 	if (settings_remote.irisOnIncomingDial == security_allow) then
@@ -804,18 +836,17 @@ end
 
 ------------------ Dial Page START
 
-function_printBookmark = function(term, items, i, index_list)
+function_printBookmarkDial = function(term, items, i, index_list)
 	local bookmark = items[i + index_list - 1]
-	if (not bookmark) then
+	if (not bookmark or not bookmark.dial) then
 		term.setCursorPos(x / 2 - 4, i)
 		term.write("Add Gate")
 		return "nox"
 	end
+	term.setCursorPos(1, i)
 	if (bookmark.name) then
-		term.setCursorPos(1, i)
 		term.write(bookmark.name)
 	else
-		term.setCursorPos(1, i)
 		term.write(bookmark.address)
 	end
 	local ok, energyNeeded = pcall(sg.energyToDial, bookmark.address)
@@ -844,9 +875,9 @@ function drawDialPage(index_list_)
 	energyAvailable = sg.energyAvailable()
 	index_list = index_list_ and index_list_ or 1
 	if (setting_showBookmarksRemote) then
-		drawList(bookmarks_remote, function_printBookmark)
+		drawList(bookmarks_remote, function_printBookmarkDial)
 	else
-		drawList(bookmarks_local, function_printBookmark)
+		drawList(bookmarks_local, function_printBookmarkDial)
 	end
 	drawBackButton()
 	if (setting_showBookmarksRemote) then
@@ -923,17 +954,6 @@ function isExtraButtonPressed(xc, yc)
 end
 
 function drawList(items, function_format)
-	--[[
-	for yc = 1, y - 3 do
-		if ((yc + index_list - 1) % 2 == 1) then
-			term.setBackgroundColor(colors.lightBlue)
-		else
-			term.setBackgroundColor(colors.lightGray)
-		end
-		term.setCursorPos(1, yc)
-		term.write("                          ")
-	end
-	]]--
 	for i = 1, 17 do
 		if ((i + index_list - 1) % 2 == 1) then
 			term.setBackgroundColor(colors.lightBlue)
@@ -974,7 +994,32 @@ while true do
 	elseif (event == "mouse_click" and param_1 == 1) then -- user mouse clicked the terminal
 		local connected = isConnected()
 		if (list_active and param_3 <= y - 3) then -- when a list is shown via drawList, this if captures all mouse clicks 3 pixels over the bottom line
-			if (menu == menu_gates) then
+			if (menu == menu_security) then
+				local bookmark = bookmarks_remote[param_3 + index_list - 1]
+				if (bookmark) then
+					if (param_2 == x) then
+						loadBookmarksRemote()
+						table.remove(bookmarks_remote, utils.getTableIndexFromArray(bookmarks_remote, bookmark.id, getId))
+						saveBookmarksRemote()
+						update()
+					elseif (param_2 >= x - 8 and param_2 <= x - 3) then
+						loadBookmarksRemote()
+						bookmark = bookmarks_remote[param_3 + index_list - 1]
+						if (bookmark) then
+							if (bookmark.mode == security_allow) then
+								bookmark.mode = security_deny
+							elseif (bookmark.mode == security_deny) then
+								bookmark.mode = security_none
+							elseif (bookmark.mode == security_none) then
+								bookmark.mode = security_allow
+							end
+							saveBookmarksRemote()
+							update()
+						end
+					end
+				else -- user wants to add a new bookmark/gate
+				end
+			elseif (menu == menu_gates) then
 				local gate = gates_local[param_3 + index_list - 1]
 				if (gate) then
 					if (param_2 == x) then
@@ -988,6 +1033,7 @@ while true do
 						saveSettingsLocal()
 						drawMenu(menu_main)
 					end
+				else -- user wants to add a new gate
 				end
 			end
 		elseif (menu == menu_main) then
@@ -1029,10 +1075,14 @@ while true do
 		resetTimer()
 	elseif (event == "mouse_scroll") then
 		if (list_active and param_3 <= y - 3) then -- when a list is shown via drawList, this if captures all mouse scrolls 3 pixels over the bottom line
-			if (menu == menu_gates) then
-				drawGatesPage(math.max(1, index_list + param_1))
+			if (menu == menu_security) then
+				drawSecurityPage(math.max(1, index_list + param_1))
 			elseif (menu == menu_history) then
 				drawHistoryPage(math.max(1, index_list + param_1))
+			elseif (menu == menu_dial) then
+				drawDialPage(math.max(1, index_list + param_1))
+			elseif (menu == menu_gates) then
+				drawGatesPage(math.max(1, index_list + param_1))
 			end
 		end
 	end
