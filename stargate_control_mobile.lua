@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 03 Jul 2018 - 02:03 AM
+  Date: Edited 03 Jul 2018 - 02:11 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -805,22 +805,43 @@ end
 ------------------ Dial Page START
 
 function_printBookmark = function(term, items, i, index_list)
-	local gate = items[i + index_list - 1]
-	if (not gate) then
+	local bookmark = items[i + index_list - 1]
+	if (not bookmark) then
 		term.setCursorPos(x / 2 - 4, i)
 		term.write("Add Gate")
 		return "nox"
 	end
-	term.setCursorPos(1, i)
-	term.write(gate.address)
-	term.setCursorPos(11, i)
-	term.write(gate.name)
+	if (bookmark.name) then
+		term.setCursorPos(1, i)
+		term.write(bookmark.name)
+	else
+		term.setCursorPos(1, i)
+		term.write(bookmark.address)
+	end
+	local ok, energyNeeded = pcall(sg.energyToDial, bookmark.address)
+	if (energyNeeded == nil) then
+		ok = false
+	end
+	if (ok) then
+		if (energyAvailable >= energyNeeded) then
+			term.setTextColor(colors.green)
+		else
+			term.setTextColor(colors.red)
+		end
+		term.setCursorPos(x - 10, i)
+		term.write(formatRFEnergy(energyNeeded * 80))
+	else
+		term.setTextColor(colors.white)
+		term.setCursorPos(x - 10, i)
+		term.write("--")
+	end
 	return true
 end
 
 function drawDialPage(index_list_)
 	loadBookmarksRemote()
 	loadBookmarksLocal()
+	energyAvailable = sg.energyAvailable()
 	index_list = index_list_ and index_list_ or 1
 	if (setting_showBookmarksRemote) then
 		drawList(bookmarks_remote, function_printBookmark)
@@ -902,6 +923,7 @@ function isExtraButtonPressed(xc, yc)
 end
 
 function drawList(items, function_format)
+	--[[
 	for yc = 1, y - 3 do
 		if ((yc + index_list - 1) % 2 == 1) then
 			term.setBackgroundColor(colors.lightBlue)
@@ -911,6 +933,7 @@ function drawList(items, function_format)
 		term.setCursorPos(1, yc)
 		term.write("                          ")
 	end
+	]]--
 	for i = 1, 17 do
 		if ((i + index_list - 1) % 2 == 1) then
 			term.setBackgroundColor(colors.lightBlue)
@@ -918,6 +941,8 @@ function drawList(items, function_format)
 			term.setBackgroundColor(colors.lightGray)
 		end
 		term.setTextColor(colors.black)
+		term.setCursorPos(1, i)
+		term.write("                          ")
 		local ok = false
 		if (function_format) then
 			run, ok = pcall(function_format, term, items, i, index_list)
@@ -944,7 +969,7 @@ resetTimer()
 while true do
 	local event, param_1, param_2, param_3, param_4, param_5 = os.pullEvent()
 	if (event == "timer" and param_1 == timerId) then -- event timer for gui updating was triggered
-		update()
+		update(nil, false)
 		resetTimer()
 	elseif (event == "mouse_click" and param_1 == 1) then -- user mouse clicked the terminal
 		local connected = isConnected()
