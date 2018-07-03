@@ -728,7 +728,7 @@ end
 
 ------------------ Security Page START
 
-function_printBookmarkSecurity = function(term, items, i, index_list)
+function_printBookmarkSecurity = function(term, items, i, index_list) -- TODO add button to toggle bookmark in the dial page
 	local bookmark = items[i + index_list - 1]
 	if (not bookmark) then
 		term.setCursorPos(x / 2 - 4, i)
