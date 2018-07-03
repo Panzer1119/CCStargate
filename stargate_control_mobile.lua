@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 03 Jul 2018 - 02:29 AM
+  Date: Edited 03 Jul 2018 - 02:55 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -995,38 +995,115 @@ while true do
 		local connected = isConnected()
 		if (list_active and param_3 <= y - 3) then -- when a list is shown via drawList, this if captures all mouse clicks 3 pixels over the bottom line
 			if (menu == menu_security) then
-				local bookmark = bookmarks_remote[param_3 + index_list - 1]
-				if (bookmark) then
-					if (param_2 == x) then
-						loadBookmarksRemote()
+				if (param_2 == x) then -- user wants to delete a bookmark (security)
+					loadBookmarksRemote()
+					local bookmark = bookmarks_remote[param_3 + index_list - 1]
+					if (bookmark) then
 						table.remove(bookmarks_remote, utils.getTableIndexFromArray(bookmarks_remote, bookmark.id, getId))
 						saveBookmarksRemote()
 						update()
-					elseif (param_2 >= x - 8 and param_2 <= x - 3) then
-						loadBookmarksRemote()
-						bookmark = bookmarks_remote[param_3 + index_list - 1]
-						if (bookmark) then
-							if (bookmark.mode == security_allow) then
-								bookmark.mode = security_deny
-							elseif (bookmark.mode == security_deny) then
-								bookmark.mode = security_none
-							elseif (bookmark.mode == security_none) then
-								bookmark.mode = security_allow
+					end
+				elseif (param_2 >= x - 8 and param_2 <= x - 3) then -- user wants to toggle the bookmark mode
+					loadBookmarksRemote()
+					local bookmark = bookmarks_remote[param_3 + index_list - 1]
+					if (bookmark) then
+						if (bookmark.mode == security_allow) then
+							bookmark.mode = security_deny
+						elseif (bookmark.mode == security_deny) then
+							bookmark.mode = security_none
+						elseif (bookmark.mode == security_none) then
+							bookmark.mode = security_allow
+						end
+						saveBookmarksRemote()
+						update()
+					end
+				else -- user wants to add a new bookmark/gate (security)
+					-- TODO input page
+				end
+			elseif (menu == menu_dial) then
+				local bookmark = nil
+				if (setting_showBookmarksRemote) then
+					bookmark = bookmarks_remote[param_3 + index_list - 1]
+				else
+					bookmark = bookmarks_local[param_3 + index_list - 1]
+				end
+				if (bookmark) then
+					if (param_2 == x) then -- user wants to delete a bookmark (dial)
+						if (setting_showBookmarksRemote) then
+							loadBookmarksRemote()
+							bookmark = bookmarks_remote[param_3 + index_list - 1]
+							if (bookmark) then
+								table.remove(bookmarks_remote, utils.getTableIndexFromArray(bookmarks_remote, bookmark.id, getId))
+								saveBookmarksRemote()
+								update()
 							end
-							saveBookmarksRemote()
-							update()
+						else
+							loadBookmarksLocal()
+							bookmark = bookmarks_local[param_3 + index_list - 1]
+							if (bookmark) then
+								table.remove(bookmarks_local, utils.getTableIndexFromArray(bookmarks_local, bookmark.id, getId))
+								saveBookmarksLocal()
+								update()
+							end
+						end
+					else -- user wants to dial
+						local energyNeeded = sg.energyToDial(bookmark.address)
+						local energyAvailable = sg.energyAvailable()
+						if (energyNeeded > energyAvailable) then
+							-- TODO show "no(t enough) energy"
+						else
+							local ok, result = pcall(sg.dial, bookmark.address)
+							if (ok) then
+								-- TODO show connected status
+								-- TODO addToHistory (as outgoing)
+							else
+								-- TODO show "Error" and the result
+							end
+							drawMenu(menu_main) -- FIXME remove this
 						end
 					end
-				else -- user wants to add a new bookmark/gate
+				else -- user wants to add a new bookmark/gate (dial)
+					-- TODO input page
+				end
+			elseif (menu == menu_history) then
+				local gate = nil
+				if (setting_showHistoryIncoming) then
+					gate = history.incoming[param_3 + index_list - 1]
+				else
+					gate = history.outgoing[param_3 + index_list - 1]
+				end
+				if (gate) then
+					if (param_2 == x) then -- user wants to delete a gate (history)
+						loadHistory()
+						if (setting_showHistoryIncoming) then
+							gate = history.incoming[param_3 + index_list - 1]
+						else
+							gate = history.outgoing[param_3 + index_list - 1]
+						end
+						if (gate) then
+							if (setting_showHistoryIncoming) then
+								table.remove(history.incoming, param_3 + index_list - 1)
+							else
+								table.remove(history.outgoing, param_3 + index_list - 1)
+							end
+							saveHistory()
+							update()
+						end
+					elseif (param_2 >= x - 8 and param_2 <= x - 1) then -- user wants to save a history entry
+						-- TODO input page
+					end
 				end
 			elseif (menu == menu_gates) then
 				local gate = gates_local[param_3 + index_list - 1]
 				if (gate) then
-					if (param_2 == x) then
+					if (param_2 == x) then -- user wants to delete a gate (gate)
 						loadGatesLocal()
-						table.remove(gates_local, utils.getTableIndexFromArray(gates_local, gate.id, getId))
-						saveGatesLocal()
-						update()
+						gate = gates_local[param_3 + index_list - 1]
+						if (gate) then
+							table.remove(gates_local, utils.getTableIndexFromArray(gates_local, gate.id, getId))
+							saveGatesLocal()
+							update()
+						end
 					else
 						loadSettingsLocal()
 						settings_local.gate = gate.id
@@ -1034,6 +1111,7 @@ while true do
 						drawMenu(menu_main)
 					end
 				else -- user wants to add a new gate
+					-- TODO input page
 				end
 			end
 		elseif (menu == menu_main) then
