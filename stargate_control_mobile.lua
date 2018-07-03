@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 03 Jul 2018 - 01:38 AM
+  Date: Edited 03 Jul 2018 - 02:03 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -109,7 +109,7 @@ sendMessage = function(message)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
-loadBookmarks = function(message)
+loadBookmarks = function()
 	if (not isConnected()) then
 		return nil
 	end
@@ -117,15 +117,7 @@ loadBookmarks = function(message)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
-loadSecurity = function(message)
-	if (not isConnected()) then
-		return nil
-	end
-	rednet.send(serverId, {call="loadSecurity", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
-	return msg
-end,
-loadSettings = function(message)
+loadSettings = function()
 	if (not isConnected()) then
 		return nil
 	end
@@ -133,7 +125,7 @@ loadSettings = function(message)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
-loadHistory = function(message)
+loadHistory = function()
 	if (not isConnected()) then
 		return nil
 	end
@@ -146,14 +138,6 @@ saveBookmarks = function(bookmarks)
 		return nil
 	end
 	rednet.send(serverId, {call="saveBookmarks", args=bookmarks}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
-	return msg
-end,
-saveSecurity = function(security)
-	if (not isConnected()) then
-		return nil
-	end
-	rednet.send(serverId, {call="saveSecurity", args=security}, protocol)
 	local sid, msg, ptc = rednet.receive(protocol)
 	return msg
 end,
@@ -185,10 +169,10 @@ menu_gates = "gates"
 menu = nil
 
 bookmarks_remote = {}
-security = {}
+bookmarks_local = {}
 settings_remote = {irisState = "Opened", irisOnIncomingDial = security_none, alarmOutputSides = {}, maxEnergy = 50000}
-history = {incoming = {}, outgoing = {}}
 settings_local = {gate = nil}
+history = {incoming = {}, outgoing = {}}
 gates_local = {}
 gate_remote = nil
 index_list = 1
@@ -197,10 +181,8 @@ list_active = false
 setting_showBookmarksRemote = true
 setting_showHistoryIncoming = true
 
---filename_bookmarks = "stargate/bookmarks.lon"
---filename_security = "stargate/security.lon"
+filename_bookmarks = "stargate/bookmarks.lon"
 filename_settings = "stargate/settings.lon"
---filename_history = "stargate/history.lon"
 filename_gates = "stargate/gates.lon"
 
 security_allow = "ALLOW"
@@ -218,16 +200,20 @@ function loadBookmarksRemote()
 	bookmarks_remote = sg.loadBookmarks()
 end
 
-function loadSecurity()
-	security = sg.loadSecurity()
-end
-
-function loadSettingsRemote()
-	settings_remote = sg.loadSettings()
+function loadBookmarksLocal()
+	if (not fs.exists(filename_bookmarks)) then
+		bookmarks_local = {}
+		saveBookmarksLocal()
+	end
+	bookmarks_local = utils.readTableFromFile(filename_bookmarks)
 end
 
 function loadHistory()
 	history = sg.loadHistory()
+end
+
+function loadSettingsRemote()
+	settings_remote = sg.loadSettings()
 end
 
 function loadSettingsLocal()
@@ -244,16 +230,16 @@ end
 function loadGatesLocal()
 	if (not fs.exists(filename_gates)) then
 		gates_local = {}
-		saveGates()
+		saveGatesLocal()
 	end
 	gates_local = utils.readTableFromFile(filename_gates)
 end
 
 function loadAll()
 	loadBookmarksRemote()
-	loadSecurity()
-	loadSettingsRemote()
+	loadBookmarksLocal()
 	loadHistory()
+	loadSettingsRemote()
 	loadSettingsLocal()
 	loadGatesLocal()
 end
@@ -261,20 +247,20 @@ end
 -- ########## LOAD END
 -- ########## SAVE BEGIN
 
-function saveBookmarks()
+function saveBookmarksRemote()
 	sg.saveBookmarks(bookmarks_remote)
 end
 
-function saveSecurity()
-	sg.saveSecurity(security)
-end
-
-function saveSettingsRemote()
-	sg.saveSettings(settings_remote)
+function saveBookmarksLocal()
+	utils.writeTableToFile(filename_bookmarks, bookmarks_local)
 end
 
 function saveHistory()
 	sg.saveHistory(history)
+end
+
+function saveSettingsRemote()
+	sg.saveSettings(settings_remote)
 end
 
 function saveSettingsLocal()
@@ -286,10 +272,10 @@ function saveGatesLocal()
 end
 
 function saveAll()
-	saveBookmarks()
-	saveSecurity()
-	saveSettingsRemote()
+	saveBookmarksRemote()
+	saveBookmarksLocal()
 	saveHistory()
+	saveSettingsRemote()
 	saveSettingsLocal()
 	saveGatesLocal()
 end
@@ -740,7 +726,7 @@ end
 ------------------ Main Page END
 
 
------------------- Security Page END
+------------------ Security Page START
 
 function drawSecurityPage()
 	loadSettingsRemote()
@@ -758,30 +744,24 @@ end
 ------------------ Secutiry Page END
 
 
------------------- History Page END
+------------------ History Page START
 
 function_printHistoryIncoming = function(term, items, i, index_list)
 	local address = history.incoming[i + index_list - 1]
 	if (not address) then
 		return false
 	end
-	local gate_bookmark = getGateByAddress(bookmarks_remote, address)
-	local gate_security = getGateByAddress(security, address)
+	local gate = getGateByAddress(bookmarks_remote, address)
 	term.setCursorPos(1, i)
 	term.write(address)
 	term.setTextColor(colors.black)
-	if (not gate_bookmark) then
+	if (gate) then
+		term.setCursorPos(math.max(11, x / 3 * 2 - (string.len(gate.name) / 2) - 1), i)
+		term.write(gate.name)
+	else
 		term.setBackgroundColor(colors.blue)
-		term.setCursorPos(x - 15, i)
+		term.setCursorPos(x - 5, i)
 		term.write("SAVE")
-	elseif (not gate_security) then
-		term.setCursorPos(math.max(11, x / 3 * 2 - (string.len(gate_bookmark.name) / 2) - 1), i)
-		term.write(gate_bookmark.name)
-	end
-	if (not gate_security) then
-		term.setBackgroundColor(colors.red)
-		term.setCursorPos(x - 10, i)
-		term.write("BAN/ALLOW")
 	end
 	return true
 end
@@ -804,7 +784,6 @@ end
 function drawHistoryPage(index_list_)
 	loadHistory()
 	loadBookmarksRemote()
-	loadSecurity()
 	index_list = index_list_ and index_list_ or 1
 	if (setting_showHistoryIncoming) then
 		drawList(history.incoming, function_printHistoryIncoming)
@@ -823,9 +802,31 @@ end
 ------------------ History Page END
 
 
------------------- Dial Page END
+------------------ Dial Page START
 
-function drawDialPage()
+function_printBookmark = function(term, items, i, index_list)
+	local gate = items[i + index_list - 1]
+	if (not gate) then
+		term.setCursorPos(x / 2 - 4, i)
+		term.write("Add Gate")
+		return "nox"
+	end
+	term.setCursorPos(1, i)
+	term.write(gate.address)
+	term.setCursorPos(11, i)
+	term.write(gate.name)
+	return true
+end
+
+function drawDialPage(index_list_)
+	loadBookmarksRemote()
+	loadBookmarksLocal()
+	index_list = index_list_ and index_list_ or 1
+	if (setting_showBookmarksRemote) then
+		drawList(bookmarks_remote, function_printBookmark)
+	else
+		drawList(bookmarks_local, function_printBookmark)
+	end
 	drawBackButton()
 	if (setting_showBookmarksRemote) then
 		drawExtraButton("Remote")
@@ -837,7 +838,7 @@ end
 
 ------------------ Dial Page END
 
------------------- Gates Page END
+------------------ Gates Page START
 
 function_printGateLocal = function(term, items, i, index_list)
 	local gate = items[i + index_list - 1]
