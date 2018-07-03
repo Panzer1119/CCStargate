@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 03 Jul 2018 - 02:55 AM
+  Date: Edited 03 Jul 2018 - 03:00 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_mobile.lua
   
@@ -20,7 +20,7 @@ rednet.open(side)
 
 ---- Test START
 
-sg = {
+sg = { -- TODO implement the safer features (2FA authentication...)
 stargateState = function()
 	if (not isConnected()) then
 		return nil
@@ -987,7 +987,7 @@ drawMenu(menu_main)
 term.setCursorPos(1, y)
 resetTimer()
 while true do
-	local event, param_1, param_2, param_3, param_4, param_5 = os.pullEvent()
+	local event, param_1, param_2, param_3, param_4, param_5 = os.pullEvent() -- FIXME what is with the "sgDialIn", "sgMessageReceived", "sgStargateStateChange", "sgChevronEngaged" events??
 	if (event == "timer" and param_1 == timerId) then -- event timer for gui updating was triggered
 		update(nil, false)
 		resetTimer()
@@ -1063,7 +1063,7 @@ while true do
 						end
 					end
 				else -- user wants to add a new bookmark/gate (dial)
-					-- TODO input page
+					-- TODO input page  IMPORTANT!!! there is a difference between adding a new REMOTE bookmark or a new LOCAL bookmark, so make sure, that the input page only returns a gate table and then you save the bookmark accordingly
 				end
 			elseif (menu == menu_history) then
 				local gate = nil
