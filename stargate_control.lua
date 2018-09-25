@@ -389,7 +389,7 @@ function drawSgStatus(status) -- draws stargate status
 		if (even) then
 			mon.write(" ")
 		end
-	elseif (status_ == "Idle") then
+	elseif (status == "Idle") then
 		drawDirectDial()
 	end
 end

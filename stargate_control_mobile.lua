@@ -13,8 +13,15 @@
 os.loadAPI("lib/security.lua")
 x, y = term.getSize() -- Pocket Computers are always x=26 and y=20
 
+PROGRAM_NAME = "Stargate Control Mobile"
+PROGRAM_NAME_SHORT = "SG Control Mobile"
+
+remoteAddress = ""
+remoteAddressColor = colors.black
+firstTimeGate = true
+
 serverId = nil
-protocol = "stargate"
+PROTOCOL = "stargate"
 side = "back"
 rednet.open(side)
 
@@ -25,136 +32,187 @@ stargateState = function()
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="stargateState", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="stargateState", args=nil}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 energyAvailable = function()
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="energyAvailable", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="energyAvailable", args=nil}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 energyToDial = function(address)
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="energyToDial", args=address}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="energyToDial", args=address}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 localAddress = function()
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="localAddress", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="localAddress", args=nil}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 remoteAddress = function()
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="remoteAddress", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="remoteAddress", args=nil}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 dial = function(address)
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="dial", args=address}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="dial", args=address}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 disconnect = function()
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="disconnect", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="disconnect", args=nil}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 irisState = function()
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="irisState", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="irisState", args=nil}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 closeIris = function()
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="closeIris", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="closeIris", args=nil}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 openIris = function()
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="openIris", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="openIris", args=nil}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 sendMessage = function(message)
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="sendMessage", args=message}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="sendMessage", args=message}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 loadBookmarks = function()
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="loadBookmarks", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="loadBookmarks", args=nil}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 loadSettings = function()
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="loadSettings", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="loadSettings", args=nil}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 loadHistory = function()
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="loadHistory", args=nil}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="loadHistory", args=nil}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 saveBookmarks = function(bookmarks)
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="saveBookmarks", args=bookmarks}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="saveBookmarks", args=bookmarks}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 saveSettings = function(settings)
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="saveSettings", args=settings}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="saveSettings", args=settings}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end,
 saveHistory = function(history)
 	if (not isConnected()) then
 		return nil
 	end
-	rednet.send(serverId, {call="saveHistory", args=history}, protocol)
-	local sid, msg, ptc = rednet.receive(protocol)
+	rednet.send(serverId, {call="saveHistory", args=history}, PROTOCOL)
+	local sid, msg, ptc = rednet.receive(PROTOCOL)
+	while (handleRednetMessage(sid, msg, ptc)) do
+		sid, msg, ptc = rednet.receive(PROTOCOL)
+	end
 	return msg
 end
 }
@@ -357,7 +415,7 @@ timerId = nil
 
 function resetTimer(time_)
 	if (time_ == nil or time_ <= 0) then
-		time_ = 2
+		time_ = 4
 	end
 	timerId = os.startTimer(time_)
 end
@@ -422,6 +480,10 @@ function drawMenu(menu_, color_back, clear)
 	elseif (menu_ == menu_gates) then
 		drawGatesPage(index_list)
 	end
+	term.setBackgroundColor(colors.red)
+	term.setTextColor(colors.black)
+	term.setCursorPos(x, y)
+	term.write("X")
 end
 
 function update(color_back, clear)
@@ -440,13 +502,26 @@ function drawMainPage(address)
 	end
 	drawDefenseButton()
 	drawIrisButton()
-	drawStargate(address)
+	drawStargate(remoteAddress)
 	drawHistoryButton()
 	drawCopyRight()
 	drawGatesButton()
 	drawDialButton()
 	drawTermButton()
 	menu = menu_main
+	if (firstTimeGate) then
+		firstTimeGate = false
+		local state, engaged, direction = sg.stargateState()
+		if (state == "Connected") then
+			remoteAddress = sg.remoteAddress()
+			remoteAddressColor = colors.lightBlue
+			drawChevrons(remoteAddress)
+		elseif (state == "Dialling") then
+			remoteAddress = sg.remoteAddress()
+			remoteAddressColor = colors.orange
+			drawChevrons(remoteAddress)
+		end
+	end
 end
 
 function drawTime()
@@ -540,6 +615,39 @@ function isIrisButtonPressed(xc, yc)
 	return xc == 4 and (yc >= (y / 3 - 2) and yc <= (y / 3 * 2))
 end
 
+function drawRemoteIris(open)
+	if (open) then
+		term.setTextColor(colors.lime)
+	else
+		term.setTextColor(colors.red)
+	end
+	term.setBackgroundColor(colors.black)
+	term.setCursorPos(x / 2 - 1, y / 2 + 4) --TODO Check position
+	term.write("IRIS ")
+end
+
+function drawRemoteAddress()
+	local address = sg.remoteAddress()
+	if (address ~= nil and address ~= "") then
+		term.setBackgroundColor(colors.black)
+		local state, engaged, direction = sg.stargateState()
+		term.setCursorPos((x / 2 + 1) - string.len(direction) / 2, y / 2 - 4) --TODO Check position
+		term.write(direction)
+		term.setCursorPos((x / 2 + 1) - string.len(address) / 2, y / 2 - 2) --TODO Check position
+		term.write(address)
+		loadBookmarksRemote()
+		local gate = getGateByAddress(bookmarks_remote, address)
+		if (gate == nil) then
+			loadBookmarksLocal()
+			gate = getGateByAddress(bookmarks_local, address)
+		end
+		if (gate ~= nil) then
+			term.setCursorPos((x / 2 + 1) - string.len(gate.name) / 2, y / 2) --TODO Check position
+			term.write(gate.name)
+		end
+	end
+end
+
 --------- Stargate START
 
 function drawStargate(address)
@@ -578,8 +686,10 @@ function drawChevrons(address)
 	end
 	for i = 1, 9 do
 		local c = ((address == nil) and nil or string.sub(address, i, i))
+		term.setTextColor(remoteAddressColor)
 		if (c == "") then
 			c = nil
+			term.setTextColor(colors.black)
 		end
 		drawChevron(i, c)
 	end
@@ -587,7 +697,7 @@ end
 
 function drawChevron(i, letter)
 	term.setBackgroundColor(colors.gray)
-	term.setTextColor(colors.black)
+	--term.setTextColor(colors.black)
 	if (i == 1) then
 		if (not letter) then
 			letter = ">"
@@ -635,6 +745,42 @@ function drawChevron(i, letter)
 		term.setCursorPos(11, y - 6)
 	end
 	term.write(" " .. letter .. " ")
+end
+
+function drawSgStatus(status)
+	if (status == nil) then
+		status = sg.stargateState()
+	end
+	if (status ~= "Idle") then
+		local xc = string.len(status)
+		term.clear() --FIXME What??
+		term.setCursorPos(1, 2) --TODO Check position
+		if (xc % 2 == 1) then
+			xc = xc + 1
+			even = true
+		else
+			even = false
+		end
+		term.setBackgroundColor(colors.black)
+		if (status == "Connected") then
+			term.setTextColor(colors.lightBlue)
+			drawRemoteAddress()
+			sg.sendMessage("irisState")
+		elseif (status == "Dialling") then
+			term.setTextColor(colors.orange)
+		else
+			term.setTextColor(colors.green)
+		end
+		term.setCursorPos((x / 2 + 1) - 6, y / 2 + 2) --TODO Check position
+		term.write("            ")
+		term.setCursorPos((x / 2 + 1) - (xc / 2 - 1), y / 2 + 2) --TODO Check position
+		term.write(status)
+		if (even) then
+			term.write(" ")
+		end
+	elseif (status == "Idle") then
+		--drawDirectDial()
+	end
 end
 
 --------- Stargate END
@@ -980,6 +1126,102 @@ function drawList(items, function_format)
 	list_active = true
 end
 
+function handleRednetMessage(sid, msg, ptc, handleFwEvents)
+	if (sid == serverId and ptc == PROTOCOL) then
+		if (type(msg) ~= "table" or msg.event == nil) then
+			return false
+		end
+		local event = msg.event
+		local p1 = msg.p1
+		local p2 = msg.p2
+		local p3 = msg.p3
+		if (event == "sgDialIn") then
+		elseif (event == "sgDialOut") then
+		elseif (event == "sgChevronEngaged") then
+			remoteAddressColor = colors.orange
+			if (string.len(remoteAddress) >= p2) then
+				remoteAddress = string.sub(remoteAddress, 1, p2 - 1)
+			end
+			remoteAddress = remoteAddress .. p3
+			drawChevrons(remoteAddress)
+		elseif (event == "sgStargateStateChange") then
+			if (p2 == "Connected") then
+				remoteAddressColor = colors.lightBlue
+				drawChevrons(remoteAddress)
+			elseif (p2 == "Idle") then
+				remoteAddress = sg.remoteAddress()
+				--ping("Gate closed")
+			end
+		elseif (event == "sgIrisStateChange") then
+			if (p2 == "Open" or p2 == "Opened" or p2 == "Closed") then
+				drawIrisButton()
+			end
+		elseif (event == "sgMessageReceived") then		
+			if (p2 == "Open" or p2 == "Opened") then
+				drawRemoteIris(true)
+			elseif (p2 == "Closed") then
+				drawRemoteIris(false)
+			elseif (p2 == "irisState") then
+				sg.sendMessage(sg.irisState())
+			end
+		else
+			return false
+		end
+		return true
+	end
+	return false
+end
+
+function ping(text)
+	term.setTextColor(colors.red)
+	term.setBackgroundColor(colors.white)
+	pingRaw(text)
+	sleep(0.2)
+	term.setBackgroundColor(colors.blue)
+	pingRaw(text)
+	sleep(0.2)
+	--
+	term.setBackgroundColor(colors.white)
+	pingRaw(text)
+	sleep(0.2)
+	term.setBackgroundColor(colors.blue)
+	pingRaw(text)
+	sleep(0.2)
+	--
+	term.setBackgroundColor(colors.white)
+	pingRaw(text)
+	sleep(0.2)
+	term.setBackgroundColor(colors.blue)
+	pingRaw(text)
+	sleep(0.2)
+	--
+	term.setBackgroundColor(colors.white)
+	pingRaw(text)
+	sleep(0.2)
+	term.setBackgroundColor(colors.blue)
+	pingRaw(text)
+	sleep(0.2)
+	term.setBackgroundColor(colors.black)
+	term.setTextColor(colors.black)
+	pingRaw(text)
+end
+
+function pingRaw(text)
+	term.setCursorPos(x - string.len(text), y)
+	term.write(text)
+end
+
+function exitProgram()
+	term.setBackgroundColor(colors.black)
+	term.setTextColor(colors.white)
+	term.clear()
+	term.setCursorPos(1, 1)
+	term.write("Quit " .. PROGRAM_NAME_SHORT)
+	term.setCursorPos(1, 2)
+	error()
+end
+
+
 -- ######### Test
 loadAll()
 term.clear()
@@ -988,10 +1230,15 @@ term.setCursorPos(1, y)
 resetTimer()
 while true do
 	local event, param_1, param_2, param_3, param_4, param_5 = os.pullEvent() -- FIXME what is with the "sgDialIn", "sgMessageReceived", "sgStargateStateChange", "sgChevronEngaged" events??
-	if (event == "timer" and param_1 == timerId) then -- event timer for gui updating was triggered
+	if (event == "rednet_message") then
+		handleRednetMessage(param_1, param_2, param_3, true)
+	elseif (event == "timer" and param_1 == timerId) then -- event timer for gui updating was triggered
 		update(nil, false)
 		resetTimer()
 	elseif (event == "mouse_click" and param_1 == 1) then -- user mouse clicked the terminal
+		if (param_2 == x and param_3 == y) then -- user clicked exit
+			exitProgram()
+		end
 		local connected = isConnected()
 		if (list_active and param_3 <= y - 3) then -- when a list is shown via drawList, this if captures all mouse clicks 3 pixels over the bottom line
 			if (menu == menu_security) then
@@ -1108,6 +1355,7 @@ while true do
 						loadSettingsLocal()
 						settings_local.gate = gate.id
 						saveSettingsLocal()
+						firstTimeGate = true
 						drawMenu(menu_main)
 					end
 				else -- user wants to add a new gate
@@ -1124,6 +1372,8 @@ while true do
 			elseif (connected and isDialButtonPressed(param_2, param_3) and sg.stargateState() == "Idle") then -- user clicked the dial button
 				drawMenu(menu_dial, colors.gray)
 			elseif (connected and isTermButtonPressed(param_2, param_3)) then -- user clicked the term button
+				remoteAddress = ""
+				remoteAddressColor = colors.black
 				sg.disconnect()
 				update()
 			elseif (isGatesButtonPressed(param_2, param_3)) then -- user clicked the gates button
