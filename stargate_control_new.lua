@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 00:17 AM
+  Date: Edited 09 Jul 2019 - 00:25 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -112,6 +112,10 @@ function formatAddressToHiphons(address)
 		temp = temp .. "-" .. string.sub(address, 8, 9)
 	end
 	return temp
+end
+
+function isHistoryEmpty()
+	return (history == nil) or (#history == 0)
 end
 
 -- Misc END
@@ -331,9 +335,9 @@ function drawMainMenu()
 	drawDefenseButton()
 	drawIrisButton()
 	drawStargate(remoteAddress) -- TODO
-	drawHistoryButton() -- TODO
-	drawDialButton() -- TODO
-	drawTermButton() -- TODO
+	drawHistoryButton()
+	drawDialButton()
+	drawTermButton()
 	if (firstTimeGate) then
 		firstTimeGate = false
 		local state, engaged, direction = sg.stargateState()
@@ -380,10 +384,10 @@ function drawDefenseButton()
 	if (not hasIris()) then
 		mon.setTextColor(colors.red)
 	end
-	local s = " DEFENSE "
+	local label = " DEFENSE "
 	local i = 1
 	for y_ = (height / 3 - 1), (height / 3 * 2 + 1) do
-		local c = string.sub(s, i, i)
+		local c = string.sub(label, i, i)
 		mon.setCursorPos(2, y_)
 		mon.write(" " .. c .. " ")
 		i = i + 1
@@ -402,10 +406,10 @@ function drawIrisButton()
 	elseif (isIrisClosed()) then
 		mon.setTextColor(colors.lime)
 	end
-	local s = "   IRIS  "
+	local label = "   IRIS  "
 	local i = 1
 	for y_ = (height / 3 - 1), (height / 3 * 2 + 1) do
-		local c = string.sub(s, i, i)
+		local c = string.sub(label, i, i)
 		mon.setCursorPos(6, y_)
 		mon.write(" " .. c .. " ")
 		i = i + 1
@@ -429,7 +433,20 @@ end
 -- ###### Stargate END
 
 function drawHistoryButton()
-	
+	loadHistory()
+	mon.setBackgroundColor(colors.lightGray)
+	mon.setTextColor(colors.black)
+	if (isHistoryEmpty()) then
+		mon.setBackgroundColor(colors.gray)
+	end
+	local label = " HISTORY "
+	local i = 1
+	for y_ = (height / 3 - 1), (height / 3 * 2 + 1) do
+		local c = string.sub(label, i, i)
+		mon.setCursorPos(width - 8, y_)
+		mon.write(" " .. c .. " ")
+		i = i + 1
+	end
 end
 
 function isHistoryButtonPressed(x_, y_)
@@ -482,14 +499,32 @@ end
 
 -- #### Main Menu END
 
+-- #### Security Menu BEGIN
+
+function drawSecurityMenu()
+	drawHeader(false)
+	-- TODO
+end
+
+-- #### Security Menu END
+
+-- #### History Menu BEGIN
+
+function drawHistoryMenu()
+	drawHeader(false)
+	-- TODO
+end
+
+-- #### History Menu END
+
 -- #### Dial Menu BEGIN
 
 function drawDialMenu()
 	drawHeader(false)
+	-- TODO
 end
 
 -- #### Dial Menu END
-
 
 
 
