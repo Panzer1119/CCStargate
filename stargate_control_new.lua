@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 08 Jul 2019 - 11:30 PM
+  Date: Edited 09 Jul 2019 - 00:17 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -23,6 +23,10 @@ MON_HEIGHT = 19
 --MON_HEIGHT = 26
 
 width, height = mon.getSize()
+
+remoteAddress = ""
+remoteAddressColor = colors.black
+firstTimeGate = true
 
 function clear(x, y, color_back)
 	mon.setBackgroundColor(color_back and color_back or colors.black)
@@ -112,7 +116,7 @@ end
 
 -- Misc END
 
-settings = {twentyFourHour = true} -- TODO!!!
+settings = {twentyFourHour = true, keepOpen = false} -- TODO!!!
 stargates = {}
 history = {}
 
@@ -125,11 +129,28 @@ security_allow = "ALLOW"
 security_deny = "DENY"
 security_none = "NONE"
 
+iris_state_offline = "Offline"
+iris_state_closed = "Closed"
+iris_state_open = "Open"
+iris_state_opening = "Opening"
+iris_state_closing = "Closing"
+
+stargate_state_connected = "Connected"
+stargate_state_connecting = "Connecting"
+stargate_state_dialling = "Dialling"
+stargate_state_idle = "Idle"
+
+dial_button_standard = "DIAL"
+dial_button_keep = "KEEP"
+dial_button_hold = "HOLD"
+
+term_button_standard = "TERM"
+
 -- ###### LOAD BEGIN
 
 function loadSettings()
 	if (not fs.exists(file_settings)) then
-		settings = {}
+		settings = {twentyFourHour = true, keepOpen = false}
 		saveSettings()
 	end
 	settings = utils.readTableFromFile(file_settings)
@@ -184,20 +205,20 @@ end
 -- ### Iris Functions BEGIN
 
 function hasIris()
-	return sg.irisState() ~= "Offline"
+	return sg.irisState() ~= iris_state_offline
 end
 
 function isIrisOpen()
-	return sg.irisState() == "Open"
+	return sg.irisState() == iris_state_open
 end
 
 function isIrisClosed()
-	return sg.irisState() == "Closed"
+	return sg.irisState() == iris_state_closed
 end
 
 function isIrisMoving()
 	local state = sg.irisState()
-	return state == "Opening" or state == "Closing"
+	return state == iris_state_opening or state == iris_state_closing
 end
 
 -- TODO toggleIrisOnIncomingDial?
@@ -309,6 +330,23 @@ function drawMainMenu()
 	drawPowerBar()
 	drawDefenseButton()
 	drawIrisButton()
+	drawStargate(remoteAddress) -- TODO
+	drawHistoryButton() -- TODO
+	drawDialButton() -- TODO
+	drawTermButton() -- TODO
+	if (firstTimeGate) then
+		firstTimeGate = false
+		local state, engaged, direction = sg.stargateState()
+		if (state == stargate_state_connected) then
+			remoteAddress = sg.remoteAddress()
+			remoteAddressColor = colors.lightBlue
+			--drawChevrons(remoteAddress) -- TODO
+		elseif (state == stargate_state_dialling) then
+			remoteAddress = sg.remoteAddress()
+			remoteAddressColor = colors.orange
+			--drawChevrons(remoteAddress) -- TODO
+		end
+	end
 end
 
 function drawPowerBar()
@@ -374,6 +412,74 @@ function drawIrisButton()
 	end
 end
 
+function isIrisButtonPressed(x_, y_)
+	return (x_ >= 6 and x_ <= 8) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2)) --TODO Test this
+end
+
+-- TODO drawRemoteIris
+
+-- TODO drawRemoteAddress
+
+-- ###### Stargate BEGIN
+
+function drawStargate(address)
+	 -- TODO
+end
+
+-- ###### Stargate END
+
+function drawHistoryButton()
+	
+end
+
+function isHistoryButtonPressed(x_, y_)
+	return (width - x_ >= 6 and width - x_ <= 8) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2)) --TODO Test this
+end
+
+
+function drawDialButton()
+	local label = dial_button_standard
+	local state, engaged, direction = sg.stargateState()
+	mon.setBackgroundColor(colors.lightGray)
+	mon.setTextColor(colors.black)
+	if (state ~= stargate_state_idle) then
+		--mon.setBackgroundColor(colors.gray) -- TODO Remove
+		label = dial_button_keep
+		if (settings.keepOpen and settings.keepOpen or false) then
+			mon.setTextColor(colors.lime)
+		end
+	end
+	for y_ = (height - 4), (height - 2) do
+		mon.setCursorPos(width / 2 - 6, y_)
+		mon.write("      ")
+	end
+	mon.setCursorPos(width / 2 - 5, height - 3)
+	mon.write(label)
+end
+
+function isDialButtonPressed(x_, y_)
+	return (x_ >= (width / 2 - 4) and x_ <= (width / 2 - 1)) and (y_ >= (height - 3) and y_ <= (height - 1)) --TODO Test this
+end
+
+function drawTermButton()
+	local state, engaged, direction = sg.stargateState()
+	mon.setBackgroundColor(colors.gray)
+	if (state == stargate_state_connected or state == stargate_state_connecting or state == stargate_state_dialling) then
+		mon.setBackgroundColor(colors.lightGray)
+	end
+	mon.setTextColor(colors.black)
+	for y_ = (height - 4), (height - 2) do
+		mon.setCursorPos(width / 2 + 1, y_)
+		mon.write("      ")
+	end
+	mon.setCursorPos(width / 2 + 2, height - 3)
+	mon.write(term_button_standard)
+end
+
+function isTermButtonPressed(x_, y_)
+	return (x_ >= (width / 2 + 6) and x_ <= (width / 2 + 1)) and (y_ >= (height - 3) and y_ <= (height - 1)) --TODO Test this
+end
+
 -- #### Main Menu END
 
 -- #### Dial Menu BEGIN
@@ -404,5 +510,5 @@ end
 
 
 
-
+loadAll()
 drawMenu(menu_main, true)
