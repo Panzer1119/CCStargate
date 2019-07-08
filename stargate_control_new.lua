@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 08 Jul 2019 - 09:07 PM
+  Date: Edited 08 Jul 2019 - 09:23 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -91,11 +91,12 @@ end
 
 -- Misc END
 
+settings = {twentyFourHour = true} -- TODO!!!
 stargates = {}
 history = {}
-settings = {} -- TODO!!!
 
 folder_stargate = "stargate"
+file_settings = folder_stargate .. "/settings.lon"
 file_stargates = folder_stargate .. "/stargates.lon"
 file_history = folder_stargate .. "/history.lon"
 
@@ -104,6 +105,14 @@ security_deny = "DENY"
 security_none = "NONE"
 
 -- ###### LOAD BEGIN
+
+function loadSettings()
+	if (not fs.exists(file_settings)) then
+		settings = {}
+		saveSettings()
+	end
+	settings = utils.readTableFromFile(file_settings)
+end
 
 function loadStargates()
 	if (not fs.exists(file_stargates)) then
@@ -122,6 +131,7 @@ function loadHistory()
 end
 
 function loadAll()
+	loadSettings()
 	loadStargates()
 	loadHistory()
 end
@@ -129,6 +139,10 @@ end
 -- ###### LOAD END
 
 -- ###### SAVE BEGIN
+
+function saveSettings()
+	utils.writeTableToFile(file_settings, settings)
+end
 
 function saveStargates()
 	utils.writeTableToFile(file_stargates, stargates)
@@ -139,6 +153,7 @@ function saveHistory()
 end
 
 function saveAll()
+	saveSettings()
 	saveStargates()
 	saveHistory()
 end
@@ -184,8 +199,8 @@ end
 
 function drawMenu(menu_to_draw, clear, color_back)
 	if (clear or menu ~= menu_to_draw) then
-		term.setBackgroundColor(color_back and color_back or colors.black)
-		term.clear()
+		mon.clear()
+		mon.setBackgroundColor(color_back and color_back or colors.black)
 	end
 	if (menu_to_draw == menu_main) then
 		drawMainMenu()
@@ -210,11 +225,31 @@ function drawHeader(color_back, color_text)
 	color_text = color_text and color_text or colors.white
 	mon.setBackgroundColor(color_back)
 	mon.setTextColor(color_text)
+	drawDate()
 	drawTime()
 end
 
+function getFormattedDate()
+	return "Day " .. os.day()
+end
+
+function getFormattedTime()
+	local time_formatted = textutils.formatTime(os.time(), settings.twentyFourHour and settings.twentyFourHour or false)
+	if (string.sub(time_formatted, 3, 3) ~= ":") then
+		time_formatted = "0" .. time_formatted
+	end
+	return time_formatted
+end
+
+function drawDate()
+	mon.setCursorPos(1, 1)
+	mon.write(getFormattedDate())
+end
+
 function drawTime()
-	
+	local time_formatted = getFormattedTime()
+	mon.setCursorPos(width - string.len(time_formatted) + 1, 1)
+	mon.write(time_formatted)
 end
 
 -- #### Header EMD
@@ -226,3 +261,28 @@ function drawMainMenu()
 end
 
 -- #### Main Menu END
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+drawMenu(menu_main, true)
