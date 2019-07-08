@@ -2,11 +2,11 @@
 
   Author: Panzer1119
   
-  Date: Created 08 Jul 2019 - 05:51 PM
+  Date: Edited 08 Jul 2019 - 05:53 PM
   
-  Original Source: 
+  Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
-  Direct Download: 
+  Direct Download: https://raw.githubusercontent.com/Panzer1119/CCStargate/master/stargate_control_new.lua
 
 ]]--
 
