@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 08 Jul 2019 - 10:10 PM
+  Date: Edited 08 Jul 2019 - 11:30 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -307,6 +307,8 @@ function drawMainMenu()
 	drawHeader()
 	drawCredits()
 	drawPowerBar()
+	drawDefenseButton()
+	drawIrisButton()
 end
 
 function drawPowerBar()
@@ -332,6 +334,44 @@ function drawPowerBar()
 	mon.setBackgroundColor(colors.black)
 	mon.setCursorPos(width - 11, height)
 	mon.write(formatRFEnergy(energyAvailable * 80))
+end
+
+function drawDefenseButton()
+	mon.setBackgroundColor(colors.lightGray)
+	mon.setTextColor(colors.black)
+	if (not hasIris()) then
+		mon.setTextColor(colors.red)
+	end
+	local s = " DEFENSE "
+	local i = 1
+	for y_ = (height / 3 - 1), (height / 3 * 2 + 1) do
+		local c = string.sub(s, i, i)
+		mon.setCursorPos(2, y_)
+		mon.write(" " .. c .. " ")
+		i = i + 1
+	end
+end
+
+function isDefenseButtonPressed(x_, y_)
+	return (x_ >= 2 and x_ <= 4) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2)) --TODO Test this
+end
+
+function drawIrisButton()
+	mon.setBackgroundColor(colors.lightGray)
+	mon.setTextColor(colors.black)
+	if (not hasIris()) then
+		mon.setTextColor(colors.red)
+	elseif (isIrisClosed()) then
+		mon.setTextColor(colors.lime)
+	end
+	local s = "   IRIS  "
+	local i = 1
+	for y_ = (height / 3 - 1), (height / 3 * 2 + 1) do
+		local c = string.sub(s, i, i)
+		mon.setCursorPos(6, y_)
+		mon.write(" " .. c .. " ")
+		i = i + 1
+	end
 end
 
 -- #### Main Menu END
