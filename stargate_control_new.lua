@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 08 Jul 2019 - 09:23 PM
+  Date: Edited 08 Jul 2019 - 09:40 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -25,9 +25,15 @@ MON_HEIGHT = 19
 width, height = mon.getSize()
 
 if (width ~= MON_WIDTH) then
+	mon.clear()
+	mon.setCursorPos(1, 1)
+	mon.write("Monitor size does not match the requirements! (width is " .. width .. ", but should be " .. MON_WIDTH .. ")")
 	error("Monitor size does not match the requirements! (width is " .. width .. ", but should be " .. MON_WIDTH .. ")")
 end
 if (height ~= MON_HEIGHT) then
+	mon.clear()
+	mon.setCursorPos(1, 1)
+	mon.write("Monitor size does not match the requirements! (height is " .. height .. ", but should be " .. MON_HEIGHT .. ")")
 	error("Monitor size does not match the requirements! (height is " .. height .. ", but should be " .. MON_HEIGHT .. ")")
 end
 
@@ -220,12 +226,13 @@ end
 
 -- #### Header BEGIN
 
-function drawHeader(color_back, color_text)
+function drawHeader(full, color_back, color_text)
 	color_back = color_back and color_back or colors.black
 	color_text = color_text and color_text or colors.white
 	mon.setBackgroundColor(color_back)
 	mon.setTextColor(color_text)
 	drawDate()
+	drawLocalAddress(full)
 	drawTime()
 end
 
@@ -252,7 +259,32 @@ function drawTime()
 	mon.write(time_formatted)
 end
 
--- #### Header EMD
+-- #### Header END
+
+function drawLocalAddress(full)
+	full = full and full or true
+	local address_local_formatted = formatAddressToHiphons(sg.localAddress())
+	local y = 1
+	if (full) then
+		local temp = "Stargate Address"
+		mon.setCursorPos((width - string.len(temp)) / 2, y)
+		mon.write(temp)
+		y = y + 1
+	end
+	mon.setCursorPos((width - string.len(address_local_formatted)) / 2, y)
+	mon.write(address_local_formatted)
+end
+
+function formatAddressToHiphons(address)
+	if (address == nil) then
+		return nil
+	end
+	local temp = string.sub(address, 1, 4) .. "-" .. string.sub(address, 5, 7)
+	if (string.len(address) == 9) then
+		temp = temp .. "-" .. string.sub(address, 8, 9)
+	end
+	return temp
+end
 
 -- #### Main Menu BEGIN
 
@@ -262,7 +294,13 @@ end
 
 -- #### Main Menu END
 
+-- #### Dial Menu BEGIN
 
+function drawDialMenu()
+	drawHeader(false)
+end
+
+-- #### Dial Menu END
 
 
 
