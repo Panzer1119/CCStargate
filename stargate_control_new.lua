@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 00:25 AM
+  Date: Edited 09 Jul 2019 - 00:32 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -467,15 +467,15 @@ function drawDialButton()
 		end
 	end
 	for y_ = (height - 4), (height - 2) do
-		mon.setCursorPos(width / 2 - 6, y_)
+		mon.setCursorPos(width / 2 - 7, y_)
 		mon.write("      ")
 	end
-	mon.setCursorPos(width / 2 - 5, height - 3)
+	mon.setCursorPos(width / 2 - 6, height - 3)
 	mon.write(label)
 end
 
 function isDialButtonPressed(x_, y_)
-	return (x_ >= (width / 2 - 4) and x_ <= (width / 2 - 1)) and (y_ >= (height - 3) and y_ <= (height - 1)) --TODO Test this
+	return (x_ >= (width / 2 - 5) and x_ <= (width / 2 - 2)) and (y_ >= (height - 3) and y_ <= (height - 1)) --TODO Test this
 end
 
 function drawTermButton()
@@ -486,15 +486,15 @@ function drawTermButton()
 	end
 	mon.setTextColor(colors.black)
 	for y_ = (height - 4), (height - 2) do
-		mon.setCursorPos(width / 2 + 1, y_)
+		mon.setCursorPos(width / 2 + 2, y_)
 		mon.write("      ")
 	end
-	mon.setCursorPos(width / 2 + 2, height - 3)
+	mon.setCursorPos(width / 2 + 3, height - 3)
 	mon.write(term_button_standard)
 end
 
 function isTermButtonPressed(x_, y_)
-	return (x_ >= (width / 2 + 6) and x_ <= (width / 2 + 1)) and (y_ >= (height - 3) and y_ <= (height - 1)) --TODO Test this
+	return (x_ >= (width / 2 + 7) and x_ <= (width / 2 + 2)) and (y_ >= (height - 3) and y_ <= (height - 1)) --TODO Test this
 end
 
 -- #### Main Menu END
