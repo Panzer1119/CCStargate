@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 08 Jul 2019 - 09:53 PM
+  Date: Edited 08 Jul 2019 - 10:10 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -88,7 +88,7 @@ end
 function formatRFEnergy(energy)
 	local temp = ""
 	if (energy < 1000) then
-		temp = string.sub(tostring(energy), 1, 5)
+		temp = string.sub(tostring(energy), 1, 5) .. " "
 	elseif (energy < 1000000) then
 		temp = string.sub(tostring(energy / 1000), 1, 5) .. " k"
 	elseif (energy < 1000000000) then
@@ -97,6 +97,17 @@ function formatRFEnergy(energy)
 		temp = string.sub(tostring(energy / 1000000000), 1, 5) .. " G"
 	end
 	return temp .. "RF"
+end
+
+function formatAddressToHiphons(address)
+	if (address == nil) then
+		return "Not connected"
+	end
+	local temp = string.sub(address, 1, 4) .. "-" .. string.sub(address, 5, 7)
+	if (string.len(address) == 9) then
+		temp = temp .. "-" .. string.sub(address, 8, 9)
+	end
+	return temp
 end
 
 -- Misc END
@@ -262,19 +273,6 @@ function drawTime()
 	mon.write(time_formatted)
 end
 
--- #### Header END
-
--- #### Credits BEGIN
-
-function drawCredits()
-	mon.setCursorPos(1, height)
-	mon.setBackgroundColor(colors.black)
-	mon.setTextColor(colors.gray)
-	mon.write("©Panzer1119")
-end
-
--- #### Credits END
-
 function drawLocalAddress(full)
 	mon.setTextColor(colors.lightGray)
 	full = full and full or true
@@ -290,22 +288,50 @@ function drawLocalAddress(full)
 	mon.write(address_local_formatted)
 end
 
-function formatAddressToHiphons(address)
-	if (address == nil) then
-		return nil
-	end
-	local temp = string.sub(address, 1, 4) .. "-" .. string.sub(address, 5, 7)
-	if (string.len(address) == 9) then
-		temp = temp .. "-" .. string.sub(address, 8, 9)
-	end
-	return temp
+-- #### Header END
+
+-- #### Credits BEGIN
+
+function drawCredits()
+	mon.setCursorPos(1, height)
+	mon.setBackgroundColor(colors.black)
+	mon.setTextColor(colors.gray)
+	mon.write("©Panzer1119")
 end
+
+-- #### Credits END
 
 -- #### Main Menu BEGIN
 
 function drawMainMenu()
 	drawHeader()
 	drawCredits()
+	drawPowerBar()
+end
+
+function drawPowerBar()
+	local energyAvailable = sg.energyAvailable()
+	local energyPercent = (energyAvailable / ((settings.maxEnergy and settings.maxEnergy or 50000) + 1))
+	for i = height, (height - (height * energyPercent)), -1 do
+		if (i > (height * 3 / 4)) then
+			mon.setBackgroundColor(colors.red)
+			mon.setTextColor(colors.red)
+		elseif (i > (height / 2)) then
+			mon.setBackgroundColor(colors.orange)
+			mon.setTextColor(colors.orange)
+		elseif (i > (height / 4)) then
+			mon.setBackgroundColor(colors.green)
+			mon.setTextColor(colors.green)
+		else
+			mon.setBackgroundColor(colors.lime)
+			mon.setTextColor(colors.lime)
+		end
+		mon.setCursorPos(width - 2, i)
+		mon.write("  ")
+	end
+	mon.setBackgroundColor(colors.black)
+	mon.setCursorPos(width - 11, height)
+	mon.write(formatRFEnergy(energyAvailable * 80))
 end
 
 -- #### Main Menu END
