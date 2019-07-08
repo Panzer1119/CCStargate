@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 08 Jul 2019 - 09:40 PM
+  Date: Edited 08 Jul 2019 - 09:53 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -24,15 +24,19 @@ MON_HEIGHT = 19
 
 width, height = mon.getSize()
 
-if (width ~= MON_WIDTH) then
+function clear(x, y, color_back)
+	mon.setBackgroundColor(color_back and color_back or colors.black)
 	mon.clear()
-	mon.setCursorPos(1, 1)
+	mon.setCursorPos(x, y)
+end
+
+if (width ~= MON_WIDTH) then
+	clear(1, 1)
 	mon.write("Monitor size does not match the requirements! (width is " .. width .. ", but should be " .. MON_WIDTH .. ")")
 	error("Monitor size does not match the requirements! (width is " .. width .. ", but should be " .. MON_WIDTH .. ")")
 end
 if (height ~= MON_HEIGHT) then
-	mon.clear()
-	mon.setCursorPos(1, 1)
+	clear(1, 1)
 	mon.write("Monitor size does not match the requirements! (height is " .. height .. ", but should be " .. MON_HEIGHT .. ")")
 	error("Monitor size does not match the requirements! (height is " .. height .. ", but should be " .. MON_HEIGHT .. ")")
 end
@@ -203,10 +207,9 @@ end
 
 -- ### Iris Functions END
 
-function drawMenu(menu_to_draw, clear, color_back)
-	if (clear or menu ~= menu_to_draw) then
-		mon.clear()
-		mon.setBackgroundColor(color_back and color_back or colors.black)
+function drawMenu(menu_to_draw, clear_, color_back)
+	if (clear_ or menu ~= menu_to_draw) then
+		clear(1, 1, color_back)
 	end
 	if (menu_to_draw == menu_main) then
 		drawMainMenu()
@@ -219,8 +222,8 @@ function drawMenu(menu_to_draw, clear, color_back)
 	end
 end
 
-function repaintMenu(clear, color_back)
-	drawMenu(menu, clear, color_back)
+function repaintMenu(clear_, color_back)
+	drawMenu(menu, clear_, color_back)
 end
 
 
@@ -232,8 +235,8 @@ function drawHeader(full, color_back, color_text)
 	mon.setBackgroundColor(color_back)
 	mon.setTextColor(color_text)
 	drawDate()
-	drawLocalAddress(full)
 	drawTime()
+	drawLocalAddress(full)
 end
 
 function getFormattedDate()
@@ -261,12 +264,24 @@ end
 
 -- #### Header END
 
+-- #### Credits BEGIN
+
+function drawCredits()
+	mon.setCursorPos(1, height)
+	mon.setBackgroundColor(colors.black)
+	mon.setTextColor(colors.gray)
+	mon.write("©Panzer1119")
+end
+
+-- #### Credits END
+
 function drawLocalAddress(full)
+	mon.setTextColor(colors.lightGray)
 	full = full and full or true
 	local address_local_formatted = formatAddressToHiphons(sg.localAddress())
 	local y = 1
 	if (full) then
-		local temp = "Stargate Address"
+		local temp = "Stargate Address:"
 		mon.setCursorPos((width - string.len(temp)) / 2, y)
 		mon.write(temp)
 		y = y + 1
@@ -290,6 +305,7 @@ end
 
 function drawMainMenu()
 	drawHeader()
+	drawCredits()
 end
 
 -- #### Main Menu END
