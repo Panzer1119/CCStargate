@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 07:07 PM
+  Date: Edited 09 Jul 2019 - 07:19 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -338,21 +338,23 @@ function drawMainMenu()
 	drawPowerBar()
 	drawDefenseButton()
 	drawIrisButton()
-	drawStargate(remoteAddress) -- TODO
+	drawStargate(remoteAddress)
 	drawHistoryButton()
 	drawDialButton()
 	drawTermButton()
 	if (firstTimeGate) then
 		firstTimeGate = false
 		local state, engaged, direction = sg.stargateState()
+		remoteAddress = sg.remoteAddress()
 		if (state == stargate_state_connected) then
-			remoteAddress = sg.remoteAddress()
 			remoteAddressColor = colors.lightBlue
 			drawChevrons(remoteAddress)
 		elseif (state == stargate_state_dialling) then
-			remoteAddress = sg.remoteAddress()
 			remoteAddressColor = colors.orange
-			drawChevrons(remoteAddress)
+			drawChevrons(string.sub(remoteAddress, 1, engaged))
+		elseif (state == stargate_state_connecting) then
+			remoteAddressColor = colors.green
+			drawChevrons(string.sub(remoteAddress, 1, engaged))
 		end
 	end
 end
@@ -426,9 +428,25 @@ function isIrisButtonPressed(x_, y_)
 	return (x_ >= 6 and x_ <= 8) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2)) --TODO Test this
 end
 
--- TODO drawRemoteIris
+function drawRemoteIris(open)
+	if (open) then
+		mon.setTextColor(colors.lime)
+	else
+		mon.setTextColor(colors.red)
+	end
+	mon.setBackgroundColor(colors.black)
+	local temp = "IRIS"
+	mon.setCursorPos((width - string.len(temp)) / 2, height / 2 + 3) -- TODO Check position
+	mon.write(temp)
+end
 
--- TODO drawRemoteAddress
+function drawRemoteAddress()
+	local address = sg.remoteAddress()
+	if (address ~= nil and address ~= "") then
+		mon.setBackgroundColor(colors.black)
+		local state, engaged, direction = sg.stargateState()
+	end
+end
 
 -- ###### Stargate BEGIN
 
@@ -660,7 +678,7 @@ end
 
 
 
-
-
 loadAll()
 drawMenu(menu_main, true)
+
+drawRemoteIris(true) -- TODO Test only
