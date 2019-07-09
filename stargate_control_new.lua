@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 07:19 PM
+  Date: Edited 09 Jul 2019 - 08:30 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -110,6 +110,8 @@ function formatAddressToHiphons(address)
 	local temp = string.sub(address, 1, 4) .. "-" .. string.sub(address, 5, 7)
 	if (string.len(address) == 9) then
 		temp = temp .. "-" .. string.sub(address, 8, 9)
+	else
+		temp = temp .. "   "
 	end
 	return temp
 end
@@ -119,6 +121,8 @@ function isHistoryEmpty()
 end
 
 -- Misc END
+
+-- ## STATIC VALUES BEGIN
 
 settings = {twentyFourHour = true, keepOpen = false} -- TODO!!!
 stargates = {}
@@ -152,6 +156,13 @@ term_button_standard = "TERM"
 
 ring_width = 19
 ring_height = 11
+
+entries_per_page = 16
+
+button_add_address = "Add Address"
+button_back = "BACK"
+
+-- ## STATIC VALUES END
 
 -- ###### LOAD BEGIN
 
@@ -565,6 +576,28 @@ function drawChevron(i, c)
 	end
 end
 
+function drawSgStatus(status) -- FIXME Is this necessary?
+	--[[
+	if (not status) then
+		status = sg.stargateState()
+	end
+	if (status ~= stargate_state_idle) then
+		local l = string.len(status)
+		mon.setBackgroundColor(colors.black)
+		if (status == stargate_state_connected) then
+			mon.setTextColor(colors.lightBlue)
+			--drawRemoteAddress() -- FIXME necessary?
+			--sg.sendMessage("irisState") -- FIXME ?
+		elseif (status == stargate_state_dialling) then
+			mon.setTextColor(colors.orange)
+		else
+			mon.setTextColor(colors.green)
+		end
+		mon.setCursorPos(width / 2, )
+	end
+	]]--
+end
+
 -- ###### Stargate END
 
 function drawHistoryButton()
@@ -634,33 +667,123 @@ end
 
 -- #### Main Menu END
 
--- #### Security Menu BEGIN
+-- #### List Menus BEGIN
+
+function drawPreList(page)
+	for y_ = 1, entries_per_page do
+		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
+		for x_ = 1, width do
+			mon.setCursorPos(x_, y_)
+			mon.write(" ")
+		end
+	end
+	mon.setBackgroundColor(colors.black)
+	mon.setTextColor(colors.black)
+	for y_ = entries_per_page + 1, height do
+		for x_ = 1, width do
+			mon.setCursorPos(x_, y_)
+			mon.write(" ")
+		end
+	end
+end
+
+function getColorForEntryOnPage(page, i)
+	if (getIndexForEntryOnPage(page, i) % 2 == 0) then
+		return colors.lightBlue
+	else
+		return colors.lightGray
+	end
+end
+
+function getIndexForEntryOnPage(page, i)
+	return (page - 1) * entries_per_page + i
+end
+
+function getEntryOnPage(list, page, i)
+	return list[getIndexForEntryOnPage(page, i)]
+end
+
+-- ###### Security Menu BEGIN
 
 function drawSecurityMenu()
 	drawHeader(false)
 	-- TODO
 end
 
--- #### Security Menu END
+-- ###### Security Menu END
 
--- #### History Menu BEGIN
+-- ###### History Menu BEGIN
 
 function drawHistoryMenu()
 	drawHeader(false)
 	-- TODO
 end
 
--- #### History Menu END
+-- ###### History Menu END
 
--- #### Dial Menu BEGIN
+-- ###### Dial Menu BEGIN
 
 function drawDialMenu()
 	drawHeader(false)
+	drawDialList(1)
 	-- TODO
 end
 
--- #### Dial Menu END
+function drawDialList(page)
+	loadStargates()
+	drawPreList(page)
+	local max_ = page * entries_per_page
+	if (max_ > #stargates) then
+		max_ = #stargates
+	end
+	local energyAvailable = sg.energyAvailable()
+	for y_ = 1, max_ do
+		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
+		mon.setTextColor(colors.black)
+		mon.setCursorPos(1, y_)
+		local stargate = getEntryOnPage(stargates, page, y_)
+		local temp = formatAddressToHiphons(stargate.address)
+		mon.write(temp)
+		mon.setCursorPos((width - string.len(stargate.name)) / 2, y_)
+		mon.write(stargate.name)
+		local ok, energyNeeded = pcall(sg.energyToDial, stargate.address)
+		if (not energyNeeded) then
+			ok = false
+		end
+		if (ok) then
+			if (energyAvailable >= energyNeeded) then
+				mon.setTextColor(colors.green)
+			else
+				mon.setTextColor(colors.red)
+			end
+			local temp = formatRFEnergy(energyNeeded * 80)
+			mon.setCursorPos(width - string.len(temp) - 2, y_)
+			mon.write(temp)
+		else
+			mon.setTextColor(colors.white)
+			mon.setCursorPos((width + 5) / 2, y_)
+			mon.write("--")
+		end
+		mon.setBackgroundColor(colors.red)
+		mon.setTextColor(colors.black)
+		mon.setCursorPos(width, y_)
+		mon.write("X")
+	end
+	mon.setTextColor(colors.black)
+	for y_ = max_ + 1, entries_per_page do
+		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
+		mon.setCursorPos((width - string.len(button_add_address)) / 2, y_)
+		mon.write(button_add_address)
+	end
+	mon.setBackgroundColor(colors.black)
+	mon.setTextColor(colors.white)
+	mon.setCursorPos((width - string.len(button_back)) / 2, height - 1)
+	mon.write(button_back)
+end
 
+-- ###### Dial Menu END
+
+-- #### List Menus END
 
 
 
@@ -679,6 +802,7 @@ end
 
 
 loadAll()
-drawMenu(menu_main, true)
+--drawMenu(menu_main, true)
+drawMenu(menu_dial, true)
 
 drawRemoteIris(true) -- TODO Test only
