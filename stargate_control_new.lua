@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 06:33 PM
+  Date: Edited 09 Jul 2019 - 06:53 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -309,11 +309,11 @@ function drawLocalAddress(full)
 	local y = 1
 	if (full) then
 		local temp = "Stargate Address:"
-		mon.setCursorPos((width - string.len(temp)) / 2, y)
+		mon.setCursorPos((width - string.len(temp)) / 2 + 1, y)
 		mon.write(temp)
 		y = y + 1
 	end
-	mon.setCursorPos((width - string.len(address_local_formatted)) / 2, y)
+	mon.setCursorPos((width - string.len(address_local_formatted)) / 2 + 1, y)
 	mon.write(address_local_formatted)
 end
 
@@ -348,11 +348,11 @@ function drawMainMenu()
 		if (state == stargate_state_connected) then
 			remoteAddress = sg.remoteAddress()
 			remoteAddressColor = colors.lightBlue
-			--drawChevrons(remoteAddress) -- TODO
+			drawChevrons(remoteAddress)
 		elseif (state == stargate_state_dialling) then
 			remoteAddress = sg.remoteAddress()
 			remoteAddressColor = colors.orange
-			--drawChevrons(remoteAddress) -- TODO
+			drawChevrons(remoteAddress)
 		end
 	end
 end
@@ -432,24 +432,92 @@ end
 
 function drawStargate(address)
 	clearRing()
-	 -- TODO
+	drawRing()
+	drawChevrons(address)
 end
 
 function clearRing()
 	mon.setBackgroundColor(colors.black)
 	mon.setTextColor(colors.black)
 	for y_ = (height - ring_height) / 2, (height + ring_height) / 2 - 1 do
-		for x_ = (width - ring_width - 1) / 2, (width + ring_width + 1) / 2 do
-			--[[
+		for x_ = (width - ring_width + 1) / 2, (width + ring_width - 1) / 2 do
+			----[[
 			if ((x_ % 2) == (y_ % 2)) then
 				mon.setBackgroundColor(colors.blue)
 			else
 				mon.setBackgroundColor(colors.red)
 			end
-			]]--
+			--]]--
 			mon.setCursorPos(x_, y_)
 			mon.write(" ")
 		end
+	end
+end
+
+function drawRing()
+	mon.setBackgroundColor(colors.lightGray)
+	mon.setTextColor(colors.black)
+	local bar_horizontal = 11
+	mon.setCursorPos((width - bar_horizontal) / 2 + 1, 4) -- top bar
+	local temp = ""
+	for i = 1, bar_horizontal do
+		temp = temp .. " "
+	end
+	mon.write(temp)
+	mon.setCursorPos((width - bar_horizontal) / 2 + 1, 14) -- bottom bar
+	mon.write(temp)
+	local bar_vertical = 7
+	temp = 6
+	for y_ = temp, temp + bar_vertical - 1 do
+		mon.setCursorPos((width - bar_horizontal) / 2 - 1, y_)
+		mon.write(" ") -- left bar
+		mon.setCursorPos((width + bar_horizontal) / 2 + 2, y_)
+		mon.write(" ") -- right bar
+	end
+end
+
+function drawChevrons(address)
+	if (address == nil) then
+		address = ""
+	end
+	for i = 1, 9 do
+		local c = string.sub(address, i, i)
+		if (c == "") then
+			c = nil
+			mon.setTextColor(colors.black)
+		else
+			mon.setTextColor(remoteAddressColor)
+		end
+		drawChevron(i, c)
+	end
+end
+
+function drawChevron(i, c)
+	mon.setBackgroundColor(colors.gray)
+	if (i == 1) then
+		if (not c) then
+			c = ">"
+		end
+		mon.setCursorPos((width - ring_width) / 2 + 2, (height + ring_height) / 2 - 2)
+	elseif (i == 2) then
+		if (not c) then
+			c = ">"
+		end
+		mon.setCursorPos((width - ring_width) / 2 + 1, height / 2)
+	elseif (i == 3) then
+		if (not c) then
+			c = ">"
+		end
+		mon.setCursorPos((width - ring_width) / 2 + 2, (height - ring_height) / 2 + 1)
+	elseif (i == 4) then
+	elseif (i == 5) then
+	elseif (i == 6) then
+	elseif (i == 7) then
+	elseif (i == 8) then
+	elseif (i == 9) then
+	end
+	if (c) then
+		mon.write(" " .. c .. " ")
 	end
 end
 
