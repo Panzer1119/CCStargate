@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 07:03 PM
+  Date: Edited 09 Jul 2019 - 07:07 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -409,6 +409,8 @@ function drawIrisButton()
 		mon.setTextColor(colors.red)
 	elseif (isIrisClosed()) then
 		mon.setTextColor(colors.lime)
+	elseif (isIrisMoving()) then
+		mon.setTextColor(colors.blue) -- TODO remove this, when we have the event loop?
 	end
 	local label = "   IRIS  "
 	local i = 1
