@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 06:59 PM
+  Date: Edited 09 Jul 2019 - 07:03 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -150,7 +150,7 @@ dial_button_hold = "HOLD"
 
 term_button_standard = "TERM"
 
-ring_width = 17
+ring_width = 19
 ring_height = 11
 
 -- ###### LOAD BEGIN
@@ -441,13 +441,13 @@ function clearRing()
 	mon.setTextColor(colors.black)
 	for y_ = (height - ring_height) / 2, (height + ring_height) / 2 - 1 do
 		for x_ = (width - ring_width + 1) / 2, (width + ring_width - 1) / 2 do
-			----[[
+			--[[
 			if ((x_ % 2) == (y_ % 2)) then
 				mon.setBackgroundColor(colors.blue)
 			else
 				mon.setBackgroundColor(colors.red)
 			end
-			--]]--
+			]]--
 			mon.setCursorPos(x_, y_)
 			mon.write(" ")
 		end
@@ -457,7 +457,7 @@ end
 function drawRing()
 	mon.setBackgroundColor(colors.lightGray)
 	mon.setTextColor(colors.black)
-	local bar_horizontal = 11
+	local bar_horizontal = ring_width - 6
 	mon.setCursorPos((width - bar_horizontal) / 2 + 1, 4) -- top bar
 	local temp = ""
 	for i = 1, bar_horizontal do
@@ -466,7 +466,7 @@ function drawRing()
 	mon.write(temp)
 	mon.setCursorPos((width - bar_horizontal) / 2 + 1, 14) -- bottom bar
 	mon.write(temp)
-	local bar_vertical = 7
+	local bar_vertical = ring_height - 4
 	temp = 6
 	for y_ = temp, temp + bar_vertical - 1 do
 		mon.setCursorPos((width - bar_horizontal) / 2 - 1, y_)
@@ -533,12 +533,12 @@ function drawChevron(i, c)
 		if (not c) then
 			c = "^"
 		end
-		mon.setCursorPos((width - 5) / 2, (height + ring_height) / 2 - 1)
+		mon.setCursorPos((width + 4) / 2, (height + ring_height) / 2 - 1)
 	elseif (i == 9) then
 		if (not c) then
 			c = "^"
 		end
-		mon.setCursorPos((width + 3) / 2, (height + ring_height) / 2 - 1)
+		mon.setCursorPos((width - 7) / 2, (height + ring_height) / 2 - 1)
 	end
 	if (c) then
 		mon.write(" " .. c .. " ")
