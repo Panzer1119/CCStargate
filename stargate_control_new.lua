@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 06:53 PM
+  Date: Edited 09 Jul 2019 - 06:59 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -510,11 +510,35 @@ function drawChevron(i, c)
 		end
 		mon.setCursorPos((width - ring_width) / 2 + 2, (height - ring_height) / 2 + 1)
 	elseif (i == 4) then
+		if (not c) then
+			c = "V"
+		end
+		mon.setCursorPos((width - 2) / 2, (height - ring_height) / 2)
 	elseif (i == 5) then
+		if (not c) then
+			c = "<"
+		end
+		mon.setCursorPos((width + ring_width) / 2 - 3, (height - ring_height) / 2 + 1)
 	elseif (i == 6) then
+		if (not c) then
+			c = "<"
+		end
+		mon.setCursorPos((width + ring_width) / 2 - 2, height / 2)
 	elseif (i == 7) then
+		if (not c) then
+			c = "<"
+		end
+		mon.setCursorPos((width + ring_width) / 2 - 3, (height + ring_height) / 2 - 2)
 	elseif (i == 8) then
+		if (not c) then
+			c = "^"
+		end
+		mon.setCursorPos((width - 5) / 2, (height + ring_height) / 2 - 1)
 	elseif (i == 9) then
+		if (not c) then
+			c = "^"
+		end
+		mon.setCursorPos((width + 3) / 2, (height + ring_height) / 2 - 1)
 	end
 	if (c) then
 		mon.write(" " .. c .. " ")
