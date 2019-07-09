@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 08:30 PM
+  Date: Edited 09 Jul 2019 - 08:46 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -689,9 +689,9 @@ end
 
 function getColorForEntryOnPage(page, i)
 	if (getIndexForEntryOnPage(page, i) % 2 == 0) then
-		return colors.lightBlue
-	else
 		return colors.lightGray
+	else
+		return colors.lightBlue
 	end
 end
 
@@ -744,7 +744,7 @@ function drawDialList(page)
 		local stargate = getEntryOnPage(stargates, page, y_)
 		local temp = formatAddressToHiphons(stargate.address)
 		mon.write(temp)
-		mon.setCursorPos((width - string.len(stargate.name)) / 2, y_)
+		mon.setCursorPos((width - string.len(stargate.name)) / 2 + 1, y_)
 		mon.write(stargate.name)
 		local ok, energyNeeded = pcall(sg.energyToDial, stargate.address)
 		if (not energyNeeded) then
@@ -772,12 +772,12 @@ function drawDialList(page)
 	mon.setTextColor(colors.black)
 	for y_ = max_ + 1, entries_per_page do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
-		mon.setCursorPos((width - string.len(button_add_address)) / 2, y_)
+		mon.setCursorPos((width - string.len(button_add_address)) / 2 + 1, y_)
 		mon.write(button_add_address)
 	end
 	mon.setBackgroundColor(colors.black)
 	mon.setTextColor(colors.white)
-	mon.setCursorPos((width - string.len(button_back)) / 2, height - 1)
+	mon.setCursorPos((width - string.len(button_back)) / 2 + 1, height - 1)
 	mon.write(button_back)
 end
 
@@ -803,6 +803,7 @@ end
 
 loadAll()
 --drawMenu(menu_main, true)
-drawMenu(menu_dial, true)
 
-drawRemoteIris(true) -- TODO Test only
+--drawRemoteIris(true) -- TODO Test only
+
+drawMenu(menu_dial, true)
