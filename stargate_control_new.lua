@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 09:35 PM
+  Date: Edited 09 Jul 2019 - 09:56 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -684,7 +684,7 @@ end
 
 -- #### List Menus BEGIN
 
-function drawPreList(page, color_back_button)
+function drawPreList(page, page_max, color_back_button)
 	for y_ = 1, entries_per_page do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
 		for x_ = 1, width do
@@ -700,6 +700,31 @@ function drawPreList(page, color_back_button)
 			mon.write(" ")
 		end
 	end
+	-- Scroll Stuff
+	mon.setBackgroundColor(colors.white)
+	mon.setTextColor(colors.black)
+	for y_ = entries_per_page + 1, height do
+		mon.setCursorPos(width - 5, y_)
+		mon.write("      ")
+	end
+	mon.setCursorPos(width - 3, height - 2)
+	mon.write("UP")
+	mon.setCursorPos(width - 4, height)
+	mon.write("DOWN")
+	mon.setBackgroundColor(colors.lightGray)
+	mon.setCursorPos(width - 5, height - 1)
+	mon.write(" ")
+	if (page < 10) then
+		mon.write("0")
+	end
+	local s = "" .. page
+	mon.write(string.sub(s, 1, string.len(s) - 2))
+	mon.write("/")
+	if (page_max < 10) then
+		mon.write("0")
+	end
+	s = "" .. page_max
+	mon.write(string.sub(s, 1, string.len(s) - 2))
 end
 
 function getColorForEntryOnPage(page, i)
@@ -731,7 +756,8 @@ function drawSecurityList(page)
 	loadSettings()
 	local color_back = getSecurityBackgroundColor(settings.irisOnIncomingDial)
 	local color_text = getSecurityTextColor(settings.irisOnIncomingDial)
-	drawPreList(page, color_back)
+	local page_max = math.ceil(#stargates / entries_per_page)
+	drawPreList(page, page_max, color_back)
 	local max_ = page * entries_per_page
 	if (max_ > #stargates) then
 		max_ = #stargates
