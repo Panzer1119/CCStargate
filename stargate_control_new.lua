@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 09:21 PM
+  Date: Edited 09 Jul 2019 - 09:35 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -128,6 +128,9 @@ security_allow = "ALLOW"
 security_deny = "DENY"
 security_none = "NONE"
 
+security_locked = "LOCKED"
+security_diable = "DIABLE"
+
 settings = {twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none} -- TODO!!!
 stargates = {}
 history = {}
@@ -143,6 +146,11 @@ security_color_deny = colors.black
 security_color_text_deny = colors.white
 security_color_none = colors.gray
 security_color_text_none = colors.white
+
+security_color_locked = colors.gray
+security_color_text_locked = colors.red
+security_color_diable = colors.gray
+security_color_text_diable = colors.black
 
 iris_state_offline = "Offline"
 iris_state_closed = "Closed"
@@ -736,7 +744,7 @@ function drawSecurityList(page)
 		local stargate = getEntryOnPage(stargates, page, y_)
 		local temp = formatAddressToHiphons(stargate.address)
 		mon.write(temp)
-		mon.setCursorPos((width - string.len(stargate.name)) / 2 + 1, y_)
+		mon.setCursorPos((width - string.len(stargate.name)) / 2 - 1, y_)
 		mon.write(stargate.name)
 		
 		
@@ -808,6 +816,10 @@ function updateSecurityList(page)
 		if (stargate.state ~= security_allow) then
 			mon.write(" ")
 		end
+		mon.setBackgroundColor(getSecurity2BackgroundColor(stargate.locked))
+		mon.setTextColor(getSecurity2TextColor(stargate.locked))
+		mon.setCursorPos(width - 6 - 1 - 6, y_)
+		mon.write(stargate.locked and security_locked or security_diable)
 	end
 end
 
@@ -832,6 +844,22 @@ function getSecurityTextColor(security)
 		return security_color_text_none
 	else
 		return colors.white
+	end
+end
+
+function getSecurity2BackgroundColor(locked)
+	if (locked) then
+		return security_color_locked
+	else
+		return security_color_diable
+	end
+end
+
+function getSecurity2TextColor(locked)
+	if (locked) then
+		return security_color_text_locked
+	else
+		return security_color_text_diable
 	end
 end
 
