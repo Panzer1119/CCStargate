@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 08:46 PM
+  Date: Edited 09 Jul 2019 - 09:21 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -124,7 +124,11 @@ end
 
 -- ## STATIC VALUES BEGIN
 
-settings = {twentyFourHour = true, keepOpen = false} -- TODO!!!
+security_allow = "ALLOW"
+security_deny = "DENY"
+security_none = "NONE"
+
+settings = {twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none} -- TODO!!!
 stargates = {}
 history = {}
 
@@ -133,9 +137,12 @@ file_settings = folder_stargate .. "/settings.lon"
 file_stargates = folder_stargate .. "/stargates.lon"
 file_history = folder_stargate .. "/history.lon"
 
-security_allow = "ALLOW"
-security_deny = "DENY"
-security_none = "NONE"
+security_color_allow = colors.white
+security_color_text_allow = colors.black
+security_color_deny = colors.black
+security_color_text_deny = colors.white
+security_color_none = colors.gray
+security_color_text_none = colors.white
 
 iris_state_offline = "Offline"
 iris_state_closed = "Closed"
@@ -168,7 +175,7 @@ button_back = "BACK"
 
 function loadSettings()
 	if (not fs.exists(file_settings)) then
-		settings = {twentyFourHour = true, keepOpen = false}
+		settings = {twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none}
 		saveSettings()
 	end
 	settings = utils.readTableFromFile(file_settings)
@@ -669,7 +676,7 @@ end
 
 -- #### List Menus BEGIN
 
-function drawPreList(page)
+function drawPreList(page, color_back_button)
 	for y_ = 1, entries_per_page do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
 		for x_ = 1, width do
@@ -677,7 +684,7 @@ function drawPreList(page)
 			mon.write(" ")
 		end
 	end
-	mon.setBackgroundColor(colors.black)
+	mon.setBackgroundColor(color_back_button and color_back_button or colors.black)
 	mon.setTextColor(colors.black)
 	for y_ = entries_per_page + 1, height do
 		for x_ = 1, width do
@@ -707,7 +714,125 @@ end
 
 function drawSecurityMenu()
 	drawHeader(false)
+	drawSecurityList(1)
 	-- TODO
+end
+
+function drawSecurityList(page)
+	loadStargates()
+	loadSettings()
+	local color_back = getSecurityBackgroundColor(settings.irisOnIncomingDial)
+	local color_text = getSecurityTextColor(settings.irisOnIncomingDial)
+	drawPreList(page, color_back)
+	local max_ = page * entries_per_page
+	if (max_ > #stargates) then
+		max_ = #stargates
+	end
+	local energyAvailable = sg.energyAvailable()
+	for y_ = 1, max_ do
+		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
+		mon.setTextColor(colors.black)
+		mon.setCursorPos(1, y_)
+		local stargate = getEntryOnPage(stargates, page, y_)
+		local temp = formatAddressToHiphons(stargate.address)
+		mon.write(temp)
+		mon.setCursorPos((width - string.len(stargate.name)) / 2 + 1, y_)
+		mon.write(stargate.name)
+		
+		
+		---- ####
+		
+		
+		--[[
+		local ok, energyNeeded = pcall(sg.energyToDial, stargate.address)
+		if (not energyNeeded) then
+			ok = false
+		end
+		if (ok) then
+			if (energyAvailable >= energyNeeded) then
+				mon.setTextColor(colors.green)
+			else
+				mon.setTextColor(colors.red)
+			end
+			local temp = formatRFEnergy(energyNeeded * 80)
+			mon.setCursorPos(width - string.len(temp) - 2, y_)
+			mon.write(temp)
+		else
+			mon.setTextColor(colors.white)
+			mon.setCursorPos((width + 5) / 2, y_)
+			mon.write("--")
+		end
+		]]--
+		
+		
+		---- ####
+		
+		
+		mon.setBackgroundColor(colors.red)
+		mon.setTextColor(colors.black)
+		mon.setCursorPos(width, y_)
+		mon.write("X")
+	end
+	updateSecurityList(page)
+	mon.setTextColor(colors.black)
+	for y_ = max_ + 1, entries_per_page do
+		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
+		mon.setCursorPos((width - string.len(button_add_address)) / 2 + 1, y_)
+		mon.write(button_add_address)
+	end
+	--mon.setBackgroundColor(color_back)
+	--mon.setTextColor(color_text)
+	mon.setBackgroundColor(colors.black)
+	mon.setTextColor(colors.white)
+	mon.setCursorPos(1, height - 2)
+	mon.write("      ")
+	mon.setCursorPos(1, height - 1)
+	mon.write("      ")
+	mon.setCursorPos(1, height)
+	mon.write("      ")
+	mon.setCursorPos(2, height - 1)
+	mon.write(button_back)
+end
+
+function updateSecurityList(page)
+	local max_ = page * entries_per_page
+	if (max_ > #stargates) then
+		max_ = #stargates
+	end
+	for y_ = 1, max_ do
+		local stargate = getEntryOnPage(stargates, page, y_)
+		mon.setBackgroundColor(getSecurityBackgroundColor(stargate.state))
+		mon.setTextColor(getSecurityTextColor(stargate.state))
+		mon.setCursorPos(width - 6, y_)
+		mon.write(stargate.state)
+		if (stargate.state ~= security_allow) then
+			mon.write(" ")
+		end
+	end
+end
+
+function getSecurityBackgroundColor(security)
+	if (security == security_allow) then
+		return security_color_allow
+	elseif (security == security_deny) then
+		return security_color_deny
+	elseif (security == security_none) then
+		return security_color_none
+	else
+		return colors.black
+	end
+end
+
+function getSecurityTextColor(security)
+	if (security == security_allow) then
+		return security_color_text_allow
+	elseif (security == security_deny) then
+		return security_color_text_deny
+	elseif (security == security_none) then
+		return security_color_text_none
+	else
+		return colors.white
+	end
 end
 
 -- ###### Security Menu END
@@ -806,4 +931,5 @@ loadAll()
 
 --drawRemoteIris(true) -- TODO Test only
 
-drawMenu(menu_dial, true)
+--drawMenu(menu_dial, true)
+drawMenu(menu_security, true)
