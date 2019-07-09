@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 00:32 AM
+  Date: Edited 09 Jul 2019 - 06:33 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -150,6 +150,9 @@ dial_button_hold = "HOLD"
 
 term_button_standard = "TERM"
 
+ring_width = 17
+ring_height = 11
+
 -- ###### LOAD BEGIN
 
 function loadSettings()
@@ -256,6 +259,7 @@ function drawMenu(menu_to_draw, clear_, color_back)
 	elseif (menu_to_draw == menu_dial) then
 		drawDialMenu()
 	end
+	menu = menu_to_draw
 end
 
 function repaintMenu(clear_, color_back)
@@ -427,7 +431,26 @@ end
 -- ###### Stargate BEGIN
 
 function drawStargate(address)
+	clearRing()
 	 -- TODO
+end
+
+function clearRing()
+	mon.setBackgroundColor(colors.black)
+	mon.setTextColor(colors.black)
+	for y_ = (height - ring_height) / 2, (height + ring_height) / 2 - 1 do
+		for x_ = (width - ring_width - 1) / 2, (width + ring_width + 1) / 2 do
+			--[[
+			if ((x_ % 2) == (y_ % 2)) then
+				mon.setBackgroundColor(colors.blue)
+			else
+				mon.setBackgroundColor(colors.red)
+			end
+			]]--
+			mon.setCursorPos(x_, y_)
+			mon.write(" ")
+		end
+	end
 end
 
 -- ###### Stargate END
@@ -466,11 +489,11 @@ function drawDialButton()
 			mon.setTextColor(colors.lime)
 		end
 	end
-	for y_ = (height - 4), (height - 2) do
+	for y_ = (height - 3), (height - 1) do
 		mon.setCursorPos(width / 2 - 7, y_)
 		mon.write("      ")
 	end
-	mon.setCursorPos(width / 2 - 6, height - 3)
+	mon.setCursorPos(width / 2 - 6, height - 2)
 	mon.write(label)
 end
 
@@ -485,11 +508,11 @@ function drawTermButton()
 		mon.setBackgroundColor(colors.lightGray)
 	end
 	mon.setTextColor(colors.black)
-	for y_ = (height - 4), (height - 2) do
+	for y_ = (height - 3), (height - 1) do
 		mon.setCursorPos(width / 2 + 2, y_)
 		mon.write("      ")
 	end
-	mon.setCursorPos(width / 2 + 3, height - 3)
+	mon.setCursorPos(width / 2 + 3, height - 2)
 	mon.write(term_button_standard)
 end
 
