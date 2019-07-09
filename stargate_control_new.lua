@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 09:56 PM
+  Date: Edited 09 Jul 2019 - 10:07 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -692,15 +692,22 @@ function drawPreList(page, page_max, color_back_button)
 			mon.write(" ")
 		end
 	end
+	drawBottom(color_back_button)
+	drawScrollStuff(page, page_max)
+end
+
+function drawBottom(color_back_button)
 	mon.setBackgroundColor(color_back_button and color_back_button or colors.black)
 	mon.setTextColor(colors.black)
 	for y_ = entries_per_page + 1, height do
-		for x_ = 1, width do
+		for x_ = 1, width - 6 do
 			mon.setCursorPos(x_, y_)
 			mon.write(" ")
 		end
 	end
-	-- Scroll Stuff
+end
+
+function drawScrollStuff(page, page_max)
 	mon.setBackgroundColor(colors.white)
 	mon.setTextColor(colors.black)
 	for y_ = entries_per_page + 1, height do
@@ -741,6 +748,19 @@ end
 
 function getEntryOnPage(list, page, i)
 	return list[getIndexForEntryOnPage(page, i)]
+end
+
+function drawSmallBackButton()
+	mon.setBackgroundColor(colors.black)
+	mon.setTextColor(colors.white)
+	mon.setCursorPos(1, height - 2)
+	mon.write("      ")
+	mon.setCursorPos(1, height - 1)
+	mon.write("      ")
+	mon.setCursorPos(1, height)
+	mon.write("      ")
+	mon.setCursorPos(2, height - 1)
+	mon.write(button_back)
 end
 
 -- ###### Security Menu BEGIN
@@ -814,18 +834,15 @@ function drawSecurityList(page)
 		mon.setCursorPos((width - string.len(button_add_address)) / 2 + 1, y_)
 		mon.write(button_add_address)
 	end
-	--mon.setBackgroundColor(color_back)
-	--mon.setTextColor(color_text)
-	mon.setBackgroundColor(colors.black)
-	mon.setTextColor(colors.white)
-	mon.setCursorPos(1, height - 2)
-	mon.write("      ")
-	mon.setCursorPos(1, height - 1)
-	mon.write("      ")
-	mon.setCursorPos(1, height)
-	mon.write("      ")
-	mon.setCursorPos(2, height - 1)
-	mon.write(button_back)
+	drawSmallBackButton()
+	drawSecurityStandardButton(color_back, color_text)
+end
+
+function drawSecurityStandardButton(color_back, color_text)
+	mon.setBackgroundColor(color_back)
+	mon.setTextColor(color_text)
+	mon.setCursorPos((width - string.len(settings.irisOnIncomingDial)) / 2, height - 1)
+	mon.write(settings.irisOnIncomingDial)
 end
 
 function updateSecurityList(page)
@@ -847,6 +864,14 @@ function updateSecurityList(page)
 		mon.setCursorPos(width - 6 - 1 - 6, y_)
 		mon.write(stargate.locked and security_locked or security_diable)
 	end
+end
+
+function updateSecurityStandardButton()
+	local color_back = getSecurityBackgroundColor(settings.irisOnIncomingDial)
+	local color_text = getSecurityTextColor(settings.irisOnIncomingDial)
+	drawBottom(color_back)
+	drawSmallBackButton()
+	drawSecurityStandardButton(color_back, color_text)
 end
 
 function getSecurityBackgroundColor(security)
