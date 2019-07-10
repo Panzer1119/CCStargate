@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 10 Jul 2019 - 10:32 PM
+  Date: Edited 10 Jul 2019 - 11:41 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -89,6 +89,21 @@ end
 
 -- Misc BEGIN
 
+function getStargateByAddress(stargates_, address)
+	return utils.getTableFromArray(stargates_, address, getAddress)
+	--[[
+	if (string.len(address) == 7) then
+		return utils.getTableFromArray(stargates_, address, getAddressShort)
+	else
+		local stargate = utils.getTableFromArray(stargates_, address, getAddress)
+		if (not stargate) then
+			stargate = utils.getTableFromArray(stargates_, string.sub(address, 1, 7), getAddressShort)
+		end
+		return stargate
+	end
+	]]--
+end
+
 function formatRFEnergy(energy)
 	local temp = ""
 	if (energy < 1000) then
@@ -167,6 +182,9 @@ dial_button_standard = "DIAL"
 dial_button_keep = "KEEP"
 dial_button_hold = "HOLD"
 
+history_distinct = "DISTINCT"
+history_normal = "NORMAL"
+
 term_button_standard = "TERM"
 
 ring_width = 19
@@ -176,6 +194,8 @@ entries_per_page = 16
 
 button_add_address = "Add Address"
 button_back = "BACK"
+button_block = "BLOCK"
+button_save = "SAVE"
 
 -- ## STATIC VALUES END
 
@@ -684,7 +704,7 @@ end
 
 -- #### List Menus BEGIN
 
-function drawPreList(page, page_max, color_back_button)
+function drawPreList(page, page_max, color_back)
 	for y_ = 1, entries_per_page do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
 		for x_ = 1, width do
@@ -692,12 +712,12 @@ function drawPreList(page, page_max, color_back_button)
 			mon.write(" ")
 		end
 	end
-	drawBottom(color_back_button)
+	drawBottom(color_back)
 	drawScrollStuff(page, page_max)
 end
 
-function drawBottom(color_back_button)
-	mon.setBackgroundColor(color_back_button and color_back_button or colors.black)
+function drawBottom(color_back)
+	mon.setBackgroundColor(color_back and color_back or colors.black)
 	mon.setTextColor(colors.black)
 	for y_ = entries_per_page + 1, height do
 		for x_ = 1, width - 6 do
@@ -930,8 +950,9 @@ end
 function drawHistoryList(page)
 	loadSettings()
 	loadHistory()
+	loadStargates()
 	local page_max = math.ceil(#stargates / entries_per_page)
-	drawPreList(page, page_max)
+	drawPreList(page, page_max, colors.gray)
 	local max_ = page * entries_per_page
 	if (settings.history_distinct) then
 		if (max_ > #history) then
@@ -955,9 +976,25 @@ function drawHistoryList(page)
 						outs = outs + 1
 					end
 				end
-				local s = ins .. " I / " .. outs .. " O"
-				mon.setCursorPos(12, y_) -- TODO set x to 11?
+				--local s = ins .. " I / " .. outs .. " O"
+				--local s = ins .. "I/" .. outs .. "O"
+				local s = ins .. "/" .. outs
+				mon.setCursorPos(11, y_)
 				mon.write(s)
+				local stargate_ = getStargateByAddress(stargates, stargate.address)
+				if (stargate_) then
+					mon.setCursorPos((width - string.len(stargate_.name)) / 2 + 1, y_)
+					mon.write(stargate_.name)
+				else
+					mon.setBackgroundColor(colors.white)
+					mon.setTextColor(colors.black)
+					mon.setCursorPos(width - string.len(button_back) - 1 - 1 - string.len(button_save) - 1, y_)
+					mon.write(button_save)
+				end
+				mon.setBackgroundColor(colors.black)
+				mon.setTextColor(colors.red)
+				mon.setCursorPos(width - string.len(button_back) - 1 - 1, y_)
+				mon.write(button_block)
 			end
 			drawX(y_) -- TODO Move this one up?
 		end
@@ -976,6 +1013,21 @@ function drawHistoryList(page)
 		print("TODO") -- TODO
 	end
 	drawSmallBackButton()
+	drawHistoryStandardButton()
+	-- TODO Save/Block Screens etc
+end
+
+function drawHistoryStandardButton()
+	mon.setBackgroundColor(colors.gray)
+	mon.setTextColor(colors.white)
+	mon.setCursorPos((width - string.len(history_distinct)) / 2, height - 1)
+	mon.write(settings.history_distinct and history_distinct or history_normal)
+end
+
+function updateHistoryStandardButton()
+	drawBottom(colors.gray)
+	drawSmallBackButton()
+	drawHistoryStandardButton()
 end
 
 -- ###### History Menu END
