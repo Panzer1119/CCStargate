@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 10 Jul 2019 - 11:41 PM
+  Date: Edited 11 Jul 2019 - 00:28 AM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -783,11 +783,19 @@ function drawSmallBackButton()
 	mon.write(button_back)
 end
 
+function isSmallBackButtonPressed(x_, y_)
+	return (x_ >= 1 and x_ <= 6) and (y_ >= height - 2 and y_ <= height)
+end
+
 function drawX(y_)
 	mon.setBackgroundColor(colors.red)
 	mon.setTextColor(colors.black)
 	mon.setCursorPos(width, y_)
 	mon.write("X")
+end
+
+function isXPressed(y_)
+	return x_ == width and y_ <= entries_per_page
 end
 
 -- ###### Security Menu BEGIN
