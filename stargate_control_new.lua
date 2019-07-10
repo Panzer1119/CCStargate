@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jul 2019 - 10:07 PM
+  Date: Edited 10 Jul 2019 - 10:32 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -131,7 +131,7 @@ security_none = "NONE"
 security_locked = "LOCKED"
 security_diable = "DIABLE"
 
-settings = {twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none} -- TODO!!!
+settings = {twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
 stargates = {}
 history = {}
 
@@ -183,7 +183,7 @@ button_back = "BACK"
 
 function loadSettings()
 	if (not fs.exists(file_settings)) then
-		settings = {twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none}
+		settings = {twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
 		saveSettings()
 	end
 	settings = utils.readTableFromFile(file_settings)
@@ -763,6 +763,13 @@ function drawSmallBackButton()
 	mon.write(button_back)
 end
 
+function drawX(y_)
+	mon.setBackgroundColor(colors.red)
+	mon.setTextColor(colors.black)
+	mon.setCursorPos(width, y_)
+	mon.write("X")
+end
+
 -- ###### Security Menu BEGIN
 
 function drawSecurityMenu()
@@ -821,11 +828,7 @@ function drawSecurityList(page)
 		
 		---- ####
 		
-		
-		mon.setBackgroundColor(colors.red)
-		mon.setTextColor(colors.black)
-		mon.setCursorPos(width, y_)
-		mon.write("X")
+		drawX(y_)
 	end
 	updateSecurityList(page)
 	mon.setTextColor(colors.black)
@@ -920,7 +923,59 @@ end
 
 function drawHistoryMenu()
 	drawHeader(false)
+	drawHistoryList(1)
 	-- TODO
+end
+
+function drawHistoryList(page)
+	loadSettings()
+	loadHistory()
+	local page_max = math.ceil(#stargates / entries_per_page)
+	drawPreList(page, page_max)
+	local max_ = page * entries_per_page
+	if (settings.history_distinct) then
+		if (max_ > #history) then
+			max_ = #history
+		end
+		for y_ = 1, max_ do
+			local i_ = getIndexForEntryOnPage(page, y_)
+			local stargate = history[i_]
+			if (stargate.timestamps and #stargate.timestamps > 0) then
+				mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
+				mon.setTextColor(colors.black)
+				mon.setCursorPos(1, y_)
+				mon.write(stargate.address)
+				--local s = #stargate.timestamps .. " time(s)"
+				local ins = 0
+				local outs = 0
+				for i, n in ipairs(stargate.timestamps) do
+					if (n[2]) then
+						ins = ins + 1
+					else
+						outs = outs + 1
+					end
+				end
+				local s = ins .. " I / " .. outs .. " O"
+				mon.setCursorPos(12, y_) -- TODO set x to 11?
+				mon.write(s)
+			end
+			drawX(y_) -- TODO Move this one up?
+		end
+	else
+		if (max_ > #history) then
+			local temp = 0
+			for i, n in ipairs(history) do
+				temp = temp + #n.timestamps
+			end
+			if (max_ > temp) then
+				max_ = temp
+			else
+				max_ = #history
+			end
+		end
+		print("TODO") -- TODO
+	end
+	drawSmallBackButton()
 end
 
 -- ###### History Menu END
@@ -935,7 +990,8 @@ end
 
 function drawDialList(page)
 	loadStargates()
-	drawPreList(page)
+	local page_max = math.ceil(#stargates / entries_per_page)
+	drawPreList(page, page_max)
 	local max_ = page * entries_per_page
 	if (max_ > #stargates) then
 		max_ = #stargates
@@ -968,10 +1024,7 @@ function drawDialList(page)
 			mon.setCursorPos((width + 5) / 2, y_)
 			mon.write("--")
 		end
-		mon.setBackgroundColor(colors.red)
-		mon.setTextColor(colors.black)
-		mon.setCursorPos(width, y_)
-		mon.write("X")
+		drawX(y_)
 	end
 	mon.setTextColor(colors.black)
 	for y_ = max_ + 1, entries_per_page do
@@ -979,10 +1032,13 @@ function drawDialList(page)
 		mon.setCursorPos((width - string.len(button_add_address)) / 2 + 1, y_)
 		mon.write(button_add_address)
 	end
+	--[[
 	mon.setBackgroundColor(colors.black)
 	mon.setTextColor(colors.white)
 	mon.setCursorPos((width - string.len(button_back)) / 2 + 1, height - 1)
 	mon.write(button_back)
+	]]--
+	drawSmallBackButton()
 end
 
 -- ###### Dial Menu END
@@ -1011,4 +1067,5 @@ loadAll()
 --drawRemoteIris(true) -- TODO Test only
 
 --drawMenu(menu_dial, true)
-drawMenu(menu_security, true)
+--drawMenu(menu_security, true)
+drawMenu(menu_history, true)
