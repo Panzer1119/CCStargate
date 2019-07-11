@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 11 Jul 2019 - 07:26 PM
+  Date: Edited 11 Jul 2019 - 10:11 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -156,6 +156,7 @@ security_locked = "LOCKED"
 security_diable = "DIABLE"
 
 settings = {maxEnergy = 51000, twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
+-- TODO Add temp variables for saving on which page you were? (dial/security/history(and history has 2 modes))
 stargates = {}
 history = {}
 
@@ -378,6 +379,32 @@ function drawTime(offset_right)
 	local time_formatted = getFormattedTime()
 	mon.setCursorPos(width - string.len(time_formatted) + 1 - offset_right, 1)
 	mon.write(time_formatted)
+end
+
+function isTimePressed(x_, y_)
+	if (menu == menu_main) then
+		return (x_ >= width - 6 - (settings.twentyFourHour and 5 or 8) and x_ <= width - 6) and (y_ == 1)
+	else
+		return (x_ >= width - (settings.twentyFourHour and 5 or 8) and x_ <= width) and (y_ == 1)
+	end
+end
+
+function toggleTimeFormat()
+	loadSettings()
+	if (settings.twentyFourHour == nil) then
+		settings.twentyFourHour = true
+	else
+		if (settings.twentyFourHour) then
+			settings.twentyFourHour = false
+		else
+			mon.setBackgroundColor(colors.black)
+			mon.setCursorPos(width - 8 + 1 - (menu == menu_main and 5 or 0), 1)
+			mon.write("   ")
+			settings.twentyFourHour = true
+		end
+	end
+	saveSettings()
+	drawHeader()
 end
 
 function drawLocalAddress(full)
@@ -1230,11 +1257,15 @@ while true do
 		if (menu == menu_dial) then
 			if (isBackButtonPressed(x_, y_)) then
 				drawMenu(menu_main)
+			elseif (isTimePressed(x_, y_)) then
+				toggleTimeFormat()
 			end
 			-- TODO
 		elseif (menu == menu_history) then
 			if (isSmallBackButtonPressed(x_, y_)) then
 				drawMenu(menu_main)
+			elseif (isTimePressed(x_, y_)) then
+				toggleTimeFormat()
 			end
 			-- TODO
 		elseif (menu == menu_main) then
@@ -1258,11 +1289,15 @@ while true do
 				toggleIris()
 			elseif (isHistoryButtonPressed(x_, y_)) then
 				drawMenu(menu_history)
+			elseif (isTimePressed(x_, y_)) then
+				toggleTimeFormat()
 			end
 			-- TODO
 		elseif (menu == menu_security) then
 			if (isSmallBackButtonPressed(x_, y_)) then
 				drawMenu(menu_main)
+			elseif (isTimePressed(x_, y_)) then
+				toggleTimeFormat()
 			end
 			-- TODO
 		end
