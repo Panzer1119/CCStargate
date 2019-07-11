@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 11 Jul 2019 - 10:11 PM
+  Date: Edited 11 Jul 2019 - 11:15 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -186,6 +186,7 @@ iris_state_closing = "Closing"
 stargate_state_connected = "Connected"
 stargate_state_connecting = "Connecting"
 stargate_state_dialling = "Dialling"
+stargate_state_closing = "Closing"
 stargate_state_idle = "Idle"
 
 dial_button_standard = "DIAL"
@@ -775,11 +776,39 @@ function isTermButtonPressed(x_, y_)
 	return (x_ >= (width / 2 + 2) and x_ <= (width / 2 + 7)) and (y_ >= (height - 3) and y_ <= (height - 1)) --TODO Test this
 end
 
+function toggleKeepOpen()
+	loadSettings()
+	if (settings.keepOpen == nil) then
+		settings.keepOpen = false
+	else
+		settings.keepOpen = not settings.keepOpen
+	end
+	saveSettings()
+	drawDialButton()
+end
+
+function testForKeepOpen()
+	loadSettings()
+	if (settings.keepOpen and settings.last) then
+		sleep(3)
+		if (settings.temp_forceTerm) then
+			settings.temp_forceTerm = nil
+			repaintMenu()
+			return
+		end
+		sg.dial(settings.last)
+	end
+end
+
 -- #### Main Menu END
 
 -- #### List Menus BEGIN
 
 function drawPreList(page, page_max, color_back)
+	loadSettings()
+	settings.temp_page = page
+	settings.temp_page_max = page_max
+	saveSettings()
 	for y_ = 1 + list_offset, entries_per_page + list_offset do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
 		for x_ = 1, width do
@@ -886,8 +915,8 @@ function drawX(y_)
 	mon.write("X")
 end
 
-function isXPressed(y_)
-	return x_ == width and (y_ >= 2 and y_ <= entries_per_page)
+function isXPressed(x_, y_)
+	return x_ == width and (y_ >= 1 + list_offset and y_ <= entries_per_page)
 end
 
 -- ###### Security Menu BEGIN
@@ -909,6 +938,9 @@ function drawSecurityList(page)
 	if (max_ > #stargates) then
 		max_ = #stargates
 	end
+	loadSettings()
+	settings.temp_max_ = max_
+	saveSettings()
 	local energyAvailable = sg.energyAvailable()
 	for y_ = 1 + list_offset, max_ + list_offset do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
@@ -973,6 +1005,9 @@ function updateSecurityList(page)
 	if (max_ > #stargates) then
 		max_ = #stargates
 	end
+	loadSettings()
+	settings.temp_max_ = max_
+	saveSettings()
 	for y_ = 1 + list_offset, max_ + list_offset do
 		local stargate = getEntryOnPage(stargates, page, y_)
 		mon.setBackgroundColor(getSecurityBackgroundColor(stargate.state))
@@ -1037,6 +1072,20 @@ function getSecurity2TextColor(locked)
 	end
 end
 
+function securityMenuXPressed(y_)
+	loadSettings()
+	local page = settings.temp_page
+	local page_max = settings.temp_page_max
+	local max_ = settings.temp_max_
+	local i_ = getIndexForEntryOnPage(page, y_)
+	if (i_ > max_) then
+		return
+	end
+	table.remove(stargates, i_)
+	saveStargates()
+	repaintMenu()
+end
+
 -- ###### Security Menu END
 
 -- ###### History Menu BEGIN
@@ -1058,6 +1107,9 @@ function drawHistoryList(page)
 		if (max_ > #history) then
 			max_ = #history
 		end
+		loadSettings()
+		settings.temp_max_ = max_
+		saveSettings()
 		for y_ = 1 + list_offset, max_ + list_offset do
 			local i_ = getIndexForEntryOnPage(page, y_)
 			local stargate = history[i_]
@@ -1110,6 +1162,9 @@ function drawHistoryList(page)
 				max_ = #history
 			end
 		end
+		loadSettings()
+		settings.temp_max_ = max_
+		saveSettings()
 		print("TODO") -- TODO
 	end
 	drawSmallBackButton()
@@ -1145,15 +1200,43 @@ function drawDialList(page)
 	local page_max = math.ceil(#stargates / entries_per_page)
 	drawPreList(page, page_max)
 	local max_ = page * entries_per_page
+	
+	--[[
 	if (max_ > #stargates) then
 		max_ = #stargates
 	end
+	]]--
+	
+	
+	
+	if (max_ > #stargates) then
+		local temp = 0
+		for i, n in ipairs(stargates) do
+			if (not n.locked) then
+				temp = temp + 1
+			end
+		end
+		if (max_ > temp) then
+			max_ = temp
+		else
+			max_ = #stargates
+		end
+	end
+	
+	
+	
+	
+	
+	loadSettings()
+	settings.temp_max_ = max_
+	saveSettings()
 	local energyAvailable = sg.energyAvailable()
 	for y_ = 1 + list_offset, max_ + list_offset do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
 		mon.setTextColor(colors.black)
 		mon.setCursorPos(1, y_)
-		local stargate = getEntryOnPage(stargates, page, y_)
+		--local stargate = getEntryOnPage(stargates, page, y_)
+		local stargate = stargates[getIndexForEntryOnDialPage(getIndexForEntryOnPage(page, y_))]
 		local temp = formatAddressToHiphons(stargate.address)
 		mon.write(temp)
 		mon.setCursorPos((width - string.len(stargate.name)) / 2 + 1, y_)
@@ -1194,6 +1277,37 @@ function drawDialList(page)
 	drawBackButton()
 end
 
+function dialMenuXPressed(y_)
+	loadSettings()
+	local page = settings.temp_page
+	local page_max = settings.temp_page_max
+	local max_ = settings.temp_max_
+	local i_ = getIndexForEntryOnPage(page, y_)
+	if (i_ > max_) then
+		return
+	end
+	-- FIXME Was ist mit den Verschiebungen, wenn Stargates locked (also nicht diable) sind, dann rutschen die Anderen ja in der Dial Liste nach oben
+	--table.remove(stargates, i_)
+	-- TODO Just lock the stargate
+	local i__ = getIndexForEntryOnDialPage(i_)
+	stargates[i__].locked = true
+	saveStargates()
+	repaintMenu()
+end
+
+function getIndexForEntryOnDialPage(i_)
+	local locked_count = 0
+	for i, n in ipairs(stargates) do
+		if (n.locked) then
+			locked_count = locked_count + 1
+		end
+		if (i - locked_count == i_) then
+			return i
+		end
+	end
+	
+end
+
 -- ###### Dial Menu END
 
 -- #### List Menus END
@@ -1230,6 +1344,11 @@ end
 
 
 loadAll()
+settings.temp_forceTerm = nil
+settings.temp_page = nil
+settings.temp_max_ = nil
+settings.temp_page_max = nil
+saveSettings()
 drawMenu(menu_main, true)
 resetTimer()
 while true do
@@ -1259,6 +1378,8 @@ while true do
 				drawMenu(menu_main)
 			elseif (isTimePressed(x_, y_)) then
 				toggleTimeFormat()
+			elseif (isXPressed(x_, y_)) then
+				dialMenuXPressed(y_)
 			end
 			-- TODO
 		elseif (menu == menu_history) then
@@ -1266,6 +1387,8 @@ while true do
 				drawMenu(menu_main)
 			elseif (isTimePressed(x_, y_)) then
 				toggleTimeFormat()
+			elseif (isXPressed(x_, y_)) then
+				historyMenuXPressed(y_) -- TODO !!!
 			end
 			-- TODO
 		elseif (menu == menu_main) then
@@ -1278,11 +1401,19 @@ while true do
 					end
 				end
 			elseif (isTermButtonPressed(x_, y_)) then
+				loadSettings()
+				settings.temp_forceTerm = true
+				saveSettings()
 				sg.disconnect()
 				-- sleep(0.5) -- TODO Good?
 				repaintMenu()
 			elseif (isDialButtonPressed(x_, y_)) then
-				drawMenu(menu_dial)
+				local state, engaged, direction = sg.stargateState()
+				if (state == stargate_state_idle) then
+					drawMenu(menu_dial)
+				else
+					toggleKeepOpen()
+				end
 			elseif (isDefenseButtonPressed(x_, y_)) then
 				drawMenu(menu_security)
 			elseif (isIrisButtonPressed(x_, y_)) then
@@ -1298,19 +1429,29 @@ while true do
 				drawMenu(menu_main)
 			elseif (isTimePressed(x_, y_)) then
 				toggleTimeFormat()
+			elseif (isXPressed(x_, y_)) then
+				securityMenuXPressed(y_)
 			end
 			-- TODO
 		end
 		
 		---- ## ## ## ##  END  ##  ## ## ## ----
 	elseif (event == event_sgDialIn) then
+		repaintMenu() -- TODO
 	elseif (event == event_sgDialOut) then
+		repaintMenu() -- TODO
 	elseif (event == event_sgMessageReceived) then
 	elseif (event == event_sgIrisStateChange) then
 		if (menu == menu_main) then
 			drawIrisButton()
 		end
 	elseif (event == event_sgStargateStateChange) then
+		print("sgStargateStateChange=" .. param_2)
+		if (param_2 == stargate_state_closing) then
+			testForKeepOpen()
+		else
+			repaintMenu()
+		end
 	elseif (event == event_sgChevronEngaged) then
 	end
 end
