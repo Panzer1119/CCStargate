@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 11 Jul 2019 - 07:24 PM
+  Date: Edited 11 Jul 2019 - 07:26 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -343,10 +343,12 @@ function drawHeader(full, color_back, color_text)
 	color_text = color_text and color_text or colors.white
 	mon.setBackgroundColor(color_back)
 	mon.setTextColor(color_text)
+	--[[
 	for x_ = 1, width do
 		mon.setCursorPos(x_, 1)
 		mon.write(" ")
 	end
+	]]--
 	drawDate()
 	drawTime(full and 5 or 0)
 	drawLocalAddress(full)
