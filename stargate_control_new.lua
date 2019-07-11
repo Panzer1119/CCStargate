@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 11 Jul 2019 - 05:39 PM
+  Date: Edited 11 Jul 2019 - 07:24 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -155,7 +155,7 @@ security_none = "NONE"
 security_locked = "LOCKED"
 security_diable = "DIABLE"
 
-settings = {twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
+settings = {maxEnergy = 51000, twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
 stargates = {}
 history = {}
 
@@ -199,7 +199,8 @@ term_button_standard = "TERM"
 ring_width = 19
 ring_height = 11
 
-entries_per_page = 16
+list_offset = 1
+entries_per_page = 15
 
 button_add_address = "Add Address"
 button_back = "BACK"
@@ -210,7 +211,9 @@ event_rednet_message = "rednet_message"
 event_timer = "timer"
 event_monitor_touch = "monitor_touch"
 event_sgDialIn = "sgDialIn"
+event_sgDialOut = "sgDialOut"
 event_sgMessageReceived = "sgMessageReceived"
+event_sgIrisStateChange = "sgIrisStateChange"
 event_sgStargateStateChange = "sgStargateStateChange"
 event_sgChevronEngaged = "sgChevronEngaged"
 
@@ -220,7 +223,7 @@ event_sgChevronEngaged = "sgChevronEngaged"
 
 function loadSettings()
 	if (not fs.exists(file_settings)) then
-		settings = {twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
+		settings = {maxEnergy = 51000, twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
 		saveSettings()
 	end
 	settings = utils.readTableFromFile(file_settings)
@@ -340,6 +343,10 @@ function drawHeader(full, color_back, color_text)
 	color_text = color_text and color_text or colors.white
 	mon.setBackgroundColor(color_back)
 	mon.setTextColor(color_text)
+	for x_ = 1, width do
+		mon.setCursorPos(x_, 1)
+		mon.write(" ")
+	end
 	drawDate()
 	drawTime(full and 5 or 0)
 	drawLocalAddress(full)
@@ -431,7 +438,8 @@ end
 function drawPowerBar()
 	local energyAvailable = sg.energyAvailable()
 	local energyPercent = (energyAvailable / ((settings.maxEnergy and settings.maxEnergy or 50000) + 1))
-	for i = height, (height - (height * energyPercent)), -1 do
+	local y_m = (height - (height * energyPercent))
+	for i = height, y_m, -1 do
 		mon.setBackgroundColor(colors.black)
 		mon.setTextColor(colors.black)
 		mon.setCursorPos(width - 3, i)
@@ -456,6 +464,12 @@ function drawPowerBar()
 	local temp = formatRFEnergy(energyAvailable * 80)
 	mon.setCursorPos(width - string.len(temp) - 4, height)
 	mon.write(temp)
+	for i = y_m, 1, -1 do
+		mon.setBackgroundColor(colors.black)
+		mon.setTextColor(colors.black)
+		mon.setCursorPos(width - 3, i)
+		mon.write("    ")
+	end
 end
 
 function drawDefenseButton()
@@ -475,7 +489,7 @@ function drawDefenseButton()
 end
 
 function isDefenseButtonPressed(x_, y_)
-	return (x_ >= 2 and x_ <= 4) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2)) --TODO Test this
+	return (x_ >= 2 and x_ <= 4) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2 + 2)) --TODO Test this
 end
 
 function drawIrisButton()
@@ -499,7 +513,7 @@ function drawIrisButton()
 end
 
 function isIrisButtonPressed(x_, y_)
-	return (x_ >= 6 and x_ <= 8) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2)) --TODO Test this
+	return (x_ >= 6 and x_ <= 8) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2 + 2)) --TODO Test this
 end
 
 function drawRemoteIris(open)
@@ -639,6 +653,10 @@ function drawChevron(i, c)
 	end
 end
 
+function isRingInnerPressed(x_, y_)
+	return (x_ >= 19 and x_ <=  31) and (y_ >= 6 and y_ <= 13) -- TODO Make modular
+end
+
 function drawSgStatus(status) -- FIXME Is this necessary?
 	--[[
 	if (not status) then
@@ -725,7 +743,7 @@ function drawTermButton()
 end
 
 function isTermButtonPressed(x_, y_)
-	return (x_ >= (width / 2 + 7) and x_ <= (width / 2 + 2)) and (y_ >= (height - 3) and y_ <= (height - 1)) --TODO Test this
+	return (x_ >= (width / 2 + 2) and x_ <= (width / 2 + 7)) and (y_ >= (height - 3) and y_ <= (height - 1)) --TODO Test this
 end
 
 -- #### Main Menu END
@@ -733,7 +751,7 @@ end
 -- #### List Menus BEGIN
 
 function drawPreList(page, page_max, color_back)
-	for y_ = 1, entries_per_page do
+	for y_ = 1 + list_offset, entries_per_page + list_offset do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
 		for x_ = 1, width do
 			mon.setCursorPos(x_, y_)
@@ -747,7 +765,7 @@ end
 function drawBottom(color_back)
 	mon.setBackgroundColor(color_back and color_back or colors.black)
 	mon.setTextColor(colors.black)
-	for y_ = entries_per_page + 1, height do
+	for y_ = entries_per_page + 1 + list_offset, height do
 		for x_ = 1, width - 6 do
 			mon.setCursorPos(x_, y_)
 			mon.write(" ")
@@ -758,7 +776,7 @@ end
 function drawScrollStuff(page, page_max)
 	mon.setBackgroundColor(colors.white)
 	mon.setTextColor(colors.black)
-	for y_ = entries_per_page + 1, height do
+	for y_ = entries_per_page + 1 + list_offset, height do
 		mon.setCursorPos(width - 5, y_)
 		mon.write("      ")
 	end
@@ -791,7 +809,7 @@ function getColorForEntryOnPage(page, i)
 end
 
 function getIndexForEntryOnPage(page, i)
-	return (page - 1) * entries_per_page + i
+	return (page - 1) * entries_per_page + (i - list_offset)
 end
 
 function getEntryOnPage(list, page, i)
@@ -811,8 +829,25 @@ function drawSmallBackButton()
 	mon.write(button_back)
 end
 
+function drawBackButton()
+	mon.setBackgroundColor(colors.black)
+	mon.setTextColor(colors.white)
+	for y_ = height - 2, height do
+		for x_ = 1, width - 6 do
+			mon.setCursorPos(x_, y_)
+			mon.write(" ")
+		end
+	end
+	mon.setCursorPos((width - string.len(button_back)) / 2 - 2, height - 1)
+	mon.write(button_back)
+end
+
 function isSmallBackButtonPressed(x_, y_)
 	return (x_ >= 1 and x_ <= 6) and (y_ >= height - 2 and y_ <= height)
+end
+
+function isBackButtonPressed(x_, y_)
+	return (x_ >= 1 and x_ <= width - 6) and (y_ >= height - 2 and y_ <= height)
 end
 
 function drawX(y_)
@@ -823,7 +858,7 @@ function drawX(y_)
 end
 
 function isXPressed(y_)
-	return x_ == width and y_ <= entries_per_page
+	return x_ == width and (y_ >= 2 and y_ <= entries_per_page)
 end
 
 -- ###### Security Menu BEGIN
@@ -846,7 +881,7 @@ function drawSecurityList(page)
 		max_ = #stargates
 	end
 	local energyAvailable = sg.energyAvailable()
-	for y_ = 1, max_ do
+	for y_ = 1 + list_offset, max_ + list_offset do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
 		mon.setTextColor(colors.black)
 		mon.setCursorPos(1, y_)
@@ -888,7 +923,7 @@ function drawSecurityList(page)
 	end
 	updateSecurityList(page)
 	mon.setTextColor(colors.black)
-	for y_ = max_ + 1, entries_per_page do
+	for y_ = max_ + 1 + list_offset, entries_per_page + list_offset do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
 		mon.setCursorPos((width - string.len(button_add_address)) / 2 + 1, y_)
 		mon.write(button_add_address)
@@ -909,7 +944,7 @@ function updateSecurityList(page)
 	if (max_ > #stargates) then
 		max_ = #stargates
 	end
-	for y_ = 1, max_ do
+	for y_ = 1 + list_offset, max_ + list_offset do
 		local stargate = getEntryOnPage(stargates, page, y_)
 		mon.setBackgroundColor(getSecurityBackgroundColor(stargate.state))
 		mon.setTextColor(getSecurityTextColor(stargate.state))
@@ -994,7 +1029,7 @@ function drawHistoryList(page)
 		if (max_ > #history) then
 			max_ = #history
 		end
-		for y_ = 1, max_ do
+		for y_ = 1 + list_offset, max_ + list_offset do
 			local i_ = getIndexForEntryOnPage(page, y_)
 			local stargate = history[i_]
 			if (stargate.timestamps and #stargate.timestamps > 0) then
@@ -1085,7 +1120,7 @@ function drawDialList(page)
 		max_ = #stargates
 	end
 	local energyAvailable = sg.energyAvailable()
-	for y_ = 1, max_ do
+	for y_ = 1 + list_offset, max_ + list_offset do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
 		mon.setTextColor(colors.black)
 		mon.setCursorPos(1, y_)
@@ -1109,13 +1144,13 @@ function drawDialList(page)
 			mon.write(temp)
 		else
 			mon.setTextColor(colors.white)
-			mon.setCursorPos((width + 5) / 2, y_)
+			mon.setCursorPos(width - 6, y_)
 			mon.write("--")
 		end
 		drawX(y_)
 	end
 	mon.setTextColor(colors.black)
-	for y_ = max_ + 1, entries_per_page do
+	for y_ = max_ + 1 + list_offset, entries_per_page + list_offset do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
 		mon.setCursorPos((width - string.len(button_add_address)) / 2 + 1, y_)
 		mon.write(button_add_address)
@@ -1126,7 +1161,8 @@ function drawDialList(page)
 	mon.setCursorPos((width - string.len(button_back)) / 2 + 1, height - 1)
 	mon.write(button_back)
 	]]--
-	drawSmallBackButton()
+	--drawSmallBackButton()
+	drawBackButton()
 end
 
 -- ###### Dial Menu END
@@ -1170,14 +1206,73 @@ resetTimer()
 while true do
 	local event, param_1, param_2, param_3, param_4, param_5 = os.pullEvent()
 	if (event == event_timer) then
-		repaintMenu() -- FIXME Update?
+		--repaintMenu() -- FIXME Update?
 		--drawHeader()
+		drawHeader()
+		if (menu == menu_main) then
+			drawPowerBar()
+		end
 		resetTimer()
 	elseif (event == event_monitor_touch) then
-		-- TODO
-		print(event, param_1, param_2, param_3)
+		local x_ = param_2
+		local y_ = param_3
+		print(event, param_1, param_2, param_3) -- FIXME Remove this
+		
+		--print("isRingInnerPressed=" .. tostring(isRingInnerPressed(x_, y_))) -- FIXME Remove this
+		--print("isTermButtonPressed=" .. tostring(isTermButtonPressed(x_, y_))) -- FIXME Remove this
+		
+		---- ## ## ## ## BEGIN ## ## ## ## ----
+		
+		local state, engaged, direction = sg.stargateState()
+		
+		if (menu == menu_dial) then
+			if (isBackButtonPressed(x_, y_)) then
+				drawMenu(menu_main)
+			end
+			-- TODO
+		elseif (menu == menu_history) then
+			if (isSmallBackButtonPressed(x_, y_)) then
+				drawMenu(menu_main)
+			end
+			-- TODO
+		elseif (menu == menu_main) then
+			if (isRingInnerPressed(x_, y_)) then
+				if (state == stargate_state_idle) then
+					if (settings.lastCalled) then
+						sg.dial(settings.lastCalled) --TODO Direct call?
+						sleep(0.1) -- TODO Necessary?
+						repaintMenu() -- TODO Necessary?
+					end
+				end
+			elseif (isTermButtonPressed(x_, y_)) then
+				sg.disconnect()
+				-- sleep(0.5) -- TODO Good?
+				repaintMenu()
+			elseif (isDialButtonPressed(x_, y_)) then
+				drawMenu(menu_dial)
+			elseif (isDefenseButtonPressed(x_, y_)) then
+				drawMenu(menu_security)
+			elseif (isIrisButtonPressed(x_, y_)) then
+				toggleIris()
+			elseif (isHistoryButtonPressed(x_, y_)) then
+				drawMenu(menu_history)
+			end
+			-- TODO
+		elseif (menu == menu_security) then
+			if (isSmallBackButtonPressed(x_, y_)) then
+				drawMenu(menu_main)
+			end
+			-- TODO
+		end
+		
+		---- ## ## ## ##  END  ##  ## ## ## ----
 	elseif (event == event_sgDialIn) then
+	elseif (event == event_sgDialOut) then
 	elseif (event == event_sgMessageReceived) then
+	elseif (event == event_sgIrisStateChange) then
+		if (menu == menu_main) then
+			drawIrisButton()
+		end
 	elseif (event == event_sgStargateStateChange) then
 	elseif (event == event_sgChevronEngaged) then
 	end
