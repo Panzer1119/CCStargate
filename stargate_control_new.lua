@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 11 Jul 2019 - 00:28 AM
+  Date: Edited 11 Jul 2019 - 05:39 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -135,6 +135,15 @@ function isHistoryEmpty()
 	return (history == nil) or (#history == 0)
 end
 
+timerId = nil
+
+function resetTimer(time_)
+	if (not time_ or time_ <= 0) then
+		time_ = 4
+	end
+	timerId = os.startTimer(time_)
+end
+
 -- Misc END
 
 -- ## STATIC VALUES BEGIN
@@ -196,6 +205,14 @@ button_add_address = "Add Address"
 button_back = "BACK"
 button_block = "BLOCK"
 button_save = "SAVE"
+
+event_rednet_message = "rednet_message"
+event_timer = "timer"
+event_monitor_touch = "monitor_touch"
+event_sgDialIn = "sgDialIn"
+event_sgMessageReceived = "sgMessageReceived"
+event_sgStargateStateChange = "sgStargateStateChange"
+event_sgChevronEngaged = "sgChevronEngaged"
 
 -- ## STATIC VALUES END
 
@@ -296,6 +313,7 @@ function drawMenu(menu_to_draw, clear_, color_back)
 	if (clear_ or menu ~= menu_to_draw) then
 		clear(1, 1, color_back)
 	end
+	menu = menu_to_draw
 	if (menu_to_draw == menu_main) then
 		drawMainMenu()
 	elseif (menu_to_draw == menu_security) then
@@ -305,7 +323,6 @@ function drawMenu(menu_to_draw, clear_, color_back)
 	elseif (menu_to_draw == menu_dial) then
 		drawDialMenu()
 	end
-	menu = menu_to_draw
 end
 
 function repaintMenu(clear_, color_back)
@@ -316,12 +333,15 @@ end
 -- #### Header BEGIN
 
 function drawHeader(full, color_back, color_text)
+	if (full == nil) then
+		full = menu == menu_main
+	end
 	color_back = color_back and color_back or colors.black
 	color_text = color_text and color_text or colors.white
 	mon.setBackgroundColor(color_back)
 	mon.setTextColor(color_text)
 	drawDate()
-	drawTime()
+	drawTime(full and 5 or 0)
 	drawLocalAddress(full)
 end
 
@@ -342,15 +362,18 @@ function drawDate()
 	mon.write(getFormattedDate())
 end
 
-function drawTime()
+function drawTime(offset_right)
+	if (not offset_right) then
+		offset_right = 0
+	end
 	local time_formatted = getFormattedTime()
-	mon.setCursorPos(width - string.len(time_formatted) + 1, 1)
+	mon.setCursorPos(width - string.len(time_formatted) + 1 - offset_right, 1)
 	mon.write(time_formatted)
 end
 
 function drawLocalAddress(full)
 	mon.setTextColor(colors.lightGray)
-	full = full and full or true
+	full = full and full or menu == menu_main
 	local address_local_formatted = formatAddressToHiphons(sg.localAddress())
 	local y = 1
 	if (full) then
@@ -409,6 +432,10 @@ function drawPowerBar()
 	local energyAvailable = sg.energyAvailable()
 	local energyPercent = (energyAvailable / ((settings.maxEnergy and settings.maxEnergy or 50000) + 1))
 	for i = height, (height - (height * energyPercent)), -1 do
+		mon.setBackgroundColor(colors.black)
+		mon.setTextColor(colors.black)
+		mon.setCursorPos(width - 3, i)
+		mon.write("    ")
 		if (i > (height * 3 / 4)) then
 			mon.setBackgroundColor(colors.red)
 			mon.setTextColor(colors.red)
@@ -426,8 +453,9 @@ function drawPowerBar()
 		mon.write("  ")
 	end
 	mon.setBackgroundColor(colors.black)
-	mon.setCursorPos(width - 11, height)
-	mon.write(formatRFEnergy(energyAvailable * 80))
+	local temp = formatRFEnergy(energyAvailable * 80)
+	mon.setCursorPos(width - string.len(temp) - 4, height)
+	mon.write(temp)
 end
 
 function drawDefenseButton()
@@ -1119,13 +1147,38 @@ end
 
 
 
+-- #### #### Test BEGIN
+
+--##--loadAll()
 
 
-loadAll()
+
 --drawMenu(menu_main, true)
 
 --drawRemoteIris(true) -- TODO Test only
 
 --drawMenu(menu_dial, true)
 --drawMenu(menu_security, true)
-drawMenu(menu_history, true)
+--##--drawMenu(menu_history, true)
+
+-- #### #### Test END
+
+
+loadAll()
+drawMenu(menu_main, true)
+resetTimer()
+while true do
+	local event, param_1, param_2, param_3, param_4, param_5 = os.pullEvent()
+	if (event == event_timer) then
+		repaintMenu() -- FIXME Update?
+		--drawHeader()
+		resetTimer()
+	elseif (event == event_monitor_touch) then
+		-- TODO
+		print(event, param_1, param_2, param_3)
+	elseif (event == event_sgDialIn) then
+	elseif (event == event_sgMessageReceived) then
+	elseif (event == event_sgStargateStateChange) then
+	elseif (event == event_sgChevronEngaged) then
+	end
+end
