@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 11 Jul 2019 - 11:15 PM
+  Date: Edited 12 Jul 2019 - 06:25 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -1185,6 +1185,22 @@ function updateHistoryStandardButton()
 	drawHistoryStandardButton()
 end
 
+function logDial(remoteAddress_, timestamp, incoming)
+	loadHistory()
+	local index = utils.getTableIndexFromArray(history, remoteAddress_, getAddress)
+	if (index == nil) then
+		table.insert(history, {address = remoteAddress_, timestamps = {timestamp, incoming}})
+	else
+		if (history[index].timestamps == nil) then
+			history[index].timestamps = {timestamp, incoming}
+		else
+			--history[index].timestamps[#history[index].timestamps + 1] = {timestamp, incoming}
+			table.insert(history[index].timestamps, {timestamp, incoming})
+		end
+	end
+	saveHistory()
+end
+
 -- ###### History Menu END
 
 -- ###### Dial Menu BEGIN
@@ -1437,9 +1453,15 @@ while true do
 		
 		---- ## ## ## ##  END  ##  ## ## ## ----
 	elseif (event == event_sgDialIn) then
-		repaintMenu() -- TODO
+		local remoteAddress_ = sg.remoteAddress()
+		local timestamp = time_utils.now()
+		logDial(remoteAddress_, timestamp, true)
+		repaintMenu()
 	elseif (event == event_sgDialOut) then
-		repaintMenu() -- TODO
+		local remoteAddress_ = sg.remoteAddress()
+		local timestamp = time_utils.now()
+		logDial(remoteAddress_, timestamp, false)
+		repaintMenu()
 	elseif (event == event_sgMessageReceived) then
 	elseif (event == event_sgIrisStateChange) then
 		if (menu == menu_main) then
