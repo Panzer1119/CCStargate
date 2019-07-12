@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 12 Jul 2019 - 06:25 PM
+  Date: Edited 12 Jul 2019 - 06:56 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -796,7 +796,7 @@ function testForKeepOpen()
 			repaintMenu()
 			return
 		end
-		sg.dial(settings.last)
+		dial(settings.last)
 	end
 end
 
@@ -1122,7 +1122,7 @@ function drawHistoryList(page)
 				local ins = 0
 				local outs = 0
 				for i, n in ipairs(stargate.timestamps) do
-					if (n[2]) then
+					if (n.inc) then
 						ins = ins + 1
 					else
 						outs = outs + 1
@@ -1138,6 +1138,10 @@ function drawHistoryList(page)
 					mon.setCursorPos((width - string.len(stargate_.name)) / 2 + 1, y_)
 					mon.write(stargate_.name)
 				else
+					s = "Unknown"
+					mon.setTextColor(colors.white)
+					mon.setCursorPos((width - string.len(s)) / 2 + 1, y_)
+					mon.write(s)
 					mon.setBackgroundColor(colors.white)
 					mon.setTextColor(colors.black)
 					mon.setCursorPos(width - string.len(button_back) - 1 - 1 - string.len(button_save) - 1, y_)
@@ -1189,13 +1193,13 @@ function logDial(remoteAddress_, timestamp, incoming)
 	loadHistory()
 	local index = utils.getTableIndexFromArray(history, remoteAddress_, getAddress)
 	if (index == nil) then
-		table.insert(history, {address = remoteAddress_, timestamps = {timestamp, incoming}})
+		table.insert(history, {address = remoteAddress_, timestamps = {{ts = timestamp, inc = incoming}}})
 	else
 		if (history[index].timestamps == nil) then
-			history[index].timestamps = {timestamp, incoming}
+			history[index].timestamps = {{ts = timestamp, inc = incoming}}
 		else
-			--history[index].timestamps[#history[index].timestamps + 1] = {timestamp, incoming}
-			table.insert(history[index].timestamps, {timestamp, incoming})
+			history[index].timestamps[#history[index].timestamps + 1] = {ts = timestamp, inc = incoming}
+			--table.insert(history[index].timestamps, {ts = timestamp, inc = incoming})
 		end
 	end
 	saveHistory()
@@ -1324,6 +1328,11 @@ function getIndexForEntryOnDialPage(i_)
 	
 end
 
+function dial(address)
+	-- FIXME log?
+	sg.dial(address)
+end
+
 -- ###### Dial Menu END
 
 -- #### List Menus END
@@ -1411,7 +1420,7 @@ while true do
 			if (isRingInnerPressed(x_, y_)) then
 				if (state == stargate_state_idle) then
 					if (settings.lastCalled) then
-						sg.dial(settings.lastCalled) --TODO Direct call?
+						dial(settings.lastCalled) --TODO Direct call?
 						sleep(0.1) -- TODO Necessary?
 						repaintMenu() -- TODO Necessary?
 					end
