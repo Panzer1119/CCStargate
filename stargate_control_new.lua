@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 12 Jul 2019 - 06:56 PM
+  Date: Edited 13 Jul 2019 - 09:52 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -1472,9 +1472,14 @@ while true do
 		logDial(remoteAddress_, timestamp, false)
 		repaintMenu()
 	elseif (event == event_sgMessageReceived) then
+		print("Message Received: " .. param_2)
+		--TODO
 	elseif (event == event_sgIrisStateChange) then
 		if (menu == menu_main) then
 			drawIrisButton()
+		end
+		if (sg.remoteAddress() ~= nil) then
+			sg.sendMessage({irisOpen = param_2 == iris_state_open})
 		end
 	elseif (event == event_sgStargateStateChange) then
 		print("sgStargateStateChange=" .. param_2)
