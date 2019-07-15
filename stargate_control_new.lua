@@ -1477,7 +1477,9 @@ while true do
 		print("Message Received: " .. param_2)
 		-- TODO store the remote iris state? because what if you are in another menu and return to the main menu?
 		if (menu == menu_main) then
-			drawRemoteIris(param_1.irisOpen)
+			if (param_1 == "remoteIrisState") then -- FIXME Removed hardcoded name and test if "param_1" is the correct variable!
+				drawRemoteIris(param_2.irisOpen)
+			end
 		end
 		--TODO Redraw remote iris, if incoming message updates the remote iris state
 	elseif (event == event_sgIrisStateChange) then
@@ -1485,7 +1487,7 @@ while true do
 			drawIrisButton()
 		end
 		if (sg.remoteAddress() ~= nil) then
-			sg.sendMessage({irisOpen = param_2 == iris_state_open})
+			sg.sendMessage("remoteIrisState", {irisOpen = param_2 == iris_state_open})
 		end
 	elseif (event == event_sgStargateStateChange) then
 		print("sgStargateStateChange=" .. param_2)
