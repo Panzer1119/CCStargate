@@ -546,7 +546,7 @@ function isIrisButtonPressed(x_, y_)
 	return (x_ >= 6 and x_ <= 8) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2 + 2)) --TODO Test this
 end
 
-function drawRemoteIris(open)
+function drawRemoteIris(open) -- TODO Draw the remote iris gray if the state is unknown?
 	if (open) then
 		mon.setTextColor(colors.lime)
 	else
@@ -1475,7 +1475,11 @@ while true do
 		repaintMenu()
 	elseif (event == event_sgMessageReceived) then
 		print("Message Received: " .. param_2)
-		--TODO
+		-- TODO store the remote iris state? because what if you are in another menu and return to the main menu?
+		if (menu == menu_main) then
+			drawRemoteIris(param_1.irisOpen)
+		end
+		--TODO Redraw remote iris, if incoming message updates the remote iris state
 	elseif (event == event_sgIrisStateChange) then
 		if (menu == menu_main) then
 			drawIrisButton()
