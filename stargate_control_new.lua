@@ -1205,6 +1205,8 @@ function logDial(remoteAddress_, timestamp, incoming)
 	saveHistory()
 end
 
+-- TODO Add a toggle Button, that toggles between showing "ALL", "KNOWN (ONLY)" and "UNKNOWN (ONLY)" so you can filter for connections
+
 -- ###### History Menu END
 
 -- ###### Dial Menu BEGIN
