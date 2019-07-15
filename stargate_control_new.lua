@@ -1332,6 +1332,7 @@ end
 
 function dial(address)
 	-- FIXME log?
+	print("Dialling " .. address)
 	sg.dial(address)
 end
 
