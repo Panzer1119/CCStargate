@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 15 Jul 2019 - 06:44 PM
+  Date: Edited 05 Jan 2020 - 02:05 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -519,7 +519,7 @@ function drawDefenseButton()
 end
 
 function isDefenseButtonPressed(x_, y_)
-	return (x_ >= 2 and x_ <= 4) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2 + 2)) --TODO Test this
+	return (x_ >= 2 and x_ <= 4) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2 + 1)) -- Tested on 05.01.2020 13:58
 end
 
 function drawIrisButton()
@@ -530,7 +530,7 @@ function drawIrisButton()
 	elseif (isIrisClosed()) then
 		mon.setTextColor(colors.lime)
 	elseif (isIrisMoving()) then
-		mon.setTextColor(colors.blue) -- TODO remove this, when we have the event loop?
+		mon.setTextColor(colors.blue) --FIXME/TODO remove this, when we have the event loop?
 	end
 	local label = "   IRIS  "
 	local i = 1
@@ -543,7 +543,7 @@ function drawIrisButton()
 end
 
 function isIrisButtonPressed(x_, y_)
-	return (x_ >= 6 and x_ <= 8) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2 + 2)) --TODO Test this
+	return (x_ >= 6 and x_ <= 8) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2 + 1)) -- Tested on 05.01.2020 13:59
 end
 
 function drawRemoteIris(open) -- TODO Draw the remote iris gray if the state is unknown?
@@ -684,7 +684,7 @@ function drawChevron(i, c)
 end
 
 function isRingInnerPressed(x_, y_)
-	return (x_ >= 19 and x_ <=  31) and (y_ >= 6 and y_ <= 13) -- TODO Make modular
+	return (x_ >= 19 and x_ <=  31) and (y_ >= 6 and y_ <= 13) -- TODO Make modular <- ?
 end
 
 function drawSgStatus(status) -- FIXME Is this necessary?
@@ -729,7 +729,7 @@ function drawHistoryButton()
 end
 
 function isHistoryButtonPressed(x_, y_)
-	return (width - x_ >= 6 and width - x_ <= 8) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2)) --TODO Test this
+	return (width - x_ >= 6 and width - x_ <= 8) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2 + 1)) -- Tested on 05.01.2020 14:00
 end
 
 
@@ -754,7 +754,7 @@ function drawDialButton()
 end
 
 function isDialButtonPressed(x_, y_)
-	return (x_ >= (width / 2 - 5) and x_ <= (width / 2 - 2)) and (y_ >= (height - 3) and y_ <= (height - 1)) --TODO Test this
+	return (x_ >= (width / 2 - 7) and x_ <= (width / 2 - 2)) and (y_ >= (height - 3) and y_ <= (height - 1)) -- Tested on 05.01.2020 14:02
 end
 
 function drawTermButton()
@@ -773,7 +773,7 @@ function drawTermButton()
 end
 
 function isTermButtonPressed(x_, y_)
-	return (x_ >= (width / 2 + 2) and x_ <= (width / 2 + 7)) and (y_ >= (height - 3) and y_ <= (height - 1)) --TODO Test this
+	return (x_ >= (width / 2 + 2) and x_ <= (width / 2 + 7)) and (y_ >= (height - 3) and y_ <= (height - 1)) -- Tested on 05.01.2020 14:02
 end
 
 function toggleKeepOpen()
