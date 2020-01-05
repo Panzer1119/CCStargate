@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 05 Jan 2020 - 02:05 PM
+  Date: Edited 05 Jan 2020 - 03:02 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -156,7 +156,7 @@ security_locked = "LOCKED"
 security_diable = "DIABLE"
 
 settings = {maxEnergy = 51000, twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
--- TODO Add temp variables for saving on which page you were? (dial/security/history(and history has 2 modes))
+currentPages = {dialPage = 1, securityPage = 1, historyPageMode1 = 1, historyPageMode2 = 1} -- TODO Add temp variables for saving on which page you were? (dial/security/history(and history has 2 modes))
 stargates = {}
 history = {}
 
@@ -787,7 +787,7 @@ function toggleKeepOpen()
 	drawDialButton()
 end
 
-function testForKeepOpen()
+function testForKeepOpen() -- TODO The stargate is not showing the dial animation, when redialling?
 	loadSettings()
 	if (settings.keepOpen and settings.last) then
 		sleep(3)
@@ -1218,47 +1218,38 @@ function drawDialMenu()
 end
 
 function drawDialList(page)
+	currentPages.dialPage = page
 	loadStargates()
-	local page_max = math.ceil(#stargates / entries_per_page)
-	drawPreList(page, page_max)
+	local offset_ = (page - 1) * entries_per_page
 	local max_ = page * entries_per_page
-	
-	--[[
 	if (max_ > #stargates) then
-		max_ = #stargates
-	end
-	]]--
-	
-	
-	
-	if (max_ > #stargates) then
-		local temp = 0
-		for i, n in ipairs(stargates) do
-			if (not n.locked) then
-				temp = temp + 1
-			end
-		end
-		if (max_ > temp) then
-			max_ = temp
-		else
 			max_ = #stargates
+	end
+	local temp = 0
+	for i, n in ipairs(stargates) do
+		if (not n.locked) then
+			temp = temp + 1
 		end
 	end
-	
-	
-	
-	
-	
+	if (max_ > temp) then
+		max_ = temp
+	end
+	local page_max = math.ceil(max_ / entries_per_page)
+	drawPreList(page, page_max)
 	loadSettings()
 	settings.temp_max_ = max_
 	saveSettings()
 	local energyAvailable = sg.energyAvailable()
-	for y_ = 1 + list_offset, max_ + list_offset do
+	for y_ = 1 + list_offset + offset_, max_ + list_offset + offset_ do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
 		mon.setTextColor(colors.black)
 		mon.setCursorPos(1, y_)
 		--local stargate = getEntryOnPage(stargates, page, y_)
 		local stargate = stargates[getIndexForEntryOnDialPage(getIndexForEntryOnPage(page, y_))]
+		if (stargate == nil) then
+			print("That should not happen... (3t4zj7)")
+			break
+		end
 		local temp = formatAddressToHiphons(stargate.address)
 		mon.write(temp)
 		mon.setCursorPos((width - string.len(stargate.name)) / 2 + 1, y_)
@@ -1317,6 +1308,36 @@ function dialMenuXPressed(y_)
 	repaintMenu()
 end
 
+function isDialEntryPressed(x_, y_)
+	return x_ < width and (y_ >= 1 + list_offset and y_ <= entries_per_page)
+end
+
+function dialEntryPressed(y_)
+	local page = currentPages.dialPage
+	--local offset_ = (page - 1) * entries_per_page
+	local max_ = page * entries_per_page
+	if (max_ > #stargates) then
+			max_ = #stargates
+	end
+	local temp = 0
+	for i, n in ipairs(stargates) do
+		if (not n.locked) then
+			temp = temp + 1
+		end
+	end
+	if (max_ > temp) then
+		max_ = temp
+	end
+	local index = getIndexForEntryOnDialPage(getIndexForEntryOnPage(page, y_))
+	if (index > 0) then
+		local stargate = stargates[index]
+		dial(stargate.address)
+		drawMenu(menu_main)
+	else
+		print("Dial: Add Address") -- TODO Add Address
+	end
+end
+
 function getIndexForEntryOnDialPage(i_)
 	local locked_count = 0
 	for i, n in ipairs(stargates) do
@@ -1327,7 +1348,7 @@ function getIndexForEntryOnDialPage(i_)
 			return i
 		end
 	end
-	
+	return -1
 end
 
 function dial(address)
@@ -1408,8 +1429,10 @@ while true do
 				toggleTimeFormat()
 			elseif (isXPressed(x_, y_)) then
 				dialMenuXPressed(y_)
+			elseif (isDialEntryPressed(x_, y_)) then
+				dialEntryPressed(y_)
 			end
-			-- TODO
+			-- TODO Page Up/Down?
 		elseif (menu == menu_history) then
 			if (isSmallBackButtonPressed(x_, y_)) then
 				drawMenu(menu_main)
@@ -1419,6 +1442,7 @@ while true do
 				historyMenuXPressed(y_) -- TODO !!!
 			end
 			-- TODO
+			-- TODO Page Up/Down?
 		elseif (menu == menu_main) then
 			if (isRingInnerPressed(x_, y_)) then
 				if (state == stargate_state_idle) then
@@ -1433,7 +1457,7 @@ while true do
 				settings.temp_forceTerm = true
 				saveSettings()
 				sg.disconnect()
-				-- sleep(0.5) -- TODO Good?
+				sleep(0.1) -- TODO Good?
 				repaintMenu()
 			elseif (isDialButtonPressed(x_, y_)) then
 				local state, engaged, direction = sg.stargateState()
@@ -1461,6 +1485,7 @@ while true do
 				securityMenuXPressed(y_)
 			end
 			-- TODO
+			-- TODO Page Up/Down?
 		end
 		
 		---- ## ## ## ##  END  ##  ## ## ## ----
