@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 05 Jan 2020 - 03:02 PM
+  Date: Edited 06 Jan 2020 - 09:07 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -410,7 +410,7 @@ end
 function getFormattedDate()
 	if (settings.dateInDays) then
 		local day = os.day()
-		return "Year " .. math.floor(day / average_days_per_year) .. ", Day " .. (day % average_days_per_year)
+		return "Y:" .. math.floor(day / average_days_per_year) .. ", D:" .. (math.floor(day % average_days_per_year) + 1)
 	else
 		return "Day " .. os.day()
 	end
@@ -436,8 +436,8 @@ function drawTime(offset_right)
 		offset_right = 0
 	end
 	local time_formatted = getFormattedTime()
-	last_time_length = string.len(time_formatted) + 1 - offset_right
-	mon.setCursorPos(width - last_time_length, 1)
+	last_time_length = string.len(time_formatted)
+	mon.setCursorPos(width - last_time_length + 1 - offset_right, 1)
 	mon.write(time_formatted)
 end
 
@@ -445,19 +445,12 @@ function isDatePressed(x_, y_)
 	return (x_ >= 1 and x_ <= last_date_length) and (y_ == 1)
 end
 
-function isTimePressed(x_, y_) -- TODO Test the last_time_length thing
+function isTimePressed(x_, y_)
 	if (menu == menu_main) then
-		return (x_ >= width - 6 - last_time_length and x_ <= width - 6) and (y_ == 1)
+		return (x_ >= width - 5 - last_time_length + 1 and x_ <= width - 5) and (y_ == 1)
 	else
-		return (x_ >= width - last_time_length and x_ <= width) and (y_ == 1)
+		return (x_ >= width - last_time_length + 1 and x_ <= width) and (y_ == 1)
 	end
-	--[[
-	if (menu == menu_main) then
-		return (x_ >= width - 6 - (settings.twentyFourHour and 5 or 8) and x_ <= width - 6) and (y_ == 1)
-	else
-		return (x_ >= width - (settings.twentyFourHour and 5 or 8) and x_ <= width) and (y_ == 1)
-	end
-	]]--
 end
 
 function toggleDateFormat()
@@ -1490,6 +1483,8 @@ while true do
 		if (menu == menu_dial) then
 			if (isBackButtonPressed(x_, y_)) then
 				drawMenu(menu_main)
+			elseif (isDatePressed(x_, y_)) then
+				toggleDateFormat()
 			elseif (isTimePressed(x_, y_)) then
 				toggleTimeFormat()
 			elseif (isXPressed(x_, y_)) then
@@ -1501,6 +1496,8 @@ while true do
 		elseif (menu == menu_history) then
 			if (isSmallBackButtonPressed(x_, y_)) then
 				drawMenu(menu_main)
+			elseif (isDatePressed(x_, y_)) then
+				toggleDateFormat()
 			elseif (isTimePressed(x_, y_)) then
 				toggleTimeFormat()
 			elseif (isXPressed(x_, y_)) then
@@ -1537,6 +1534,8 @@ while true do
 				toggleIris()
 			elseif (isHistoryButtonPressed(x_, y_)) then
 				drawMenu(menu_history)
+			elseif (isDatePressed(x_, y_)) then
+				toggleDateFormat()
 			elseif (isTimePressed(x_, y_)) then
 				toggleTimeFormat()
 			end
@@ -1544,6 +1543,8 @@ while true do
 		elseif (menu == menu_security) then
 			if (isSmallBackButtonPressed(x_, y_)) then
 				drawMenu(menu_main)
+			elseif (isDatePressed(x_, y_)) then
+				toggleDateFormat()
 			elseif (isTimePressed(x_, y_)) then
 				toggleTimeFormat()
 			elseif (isXPressed(x_, y_)) then
