@@ -6,7 +6,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
     </content>
     <orderEntry type="jdk" jdkName="Lua" jdkType="Lua SDK" />
-    <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="cclib_new" level="project" />
+    <orderEntry type="library" name="CCUtils" level="project" />
+    <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

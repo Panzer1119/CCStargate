@@ -26,6 +26,7 @@ width, height = mon.getSize()
 
 remoteAddress = ""
 remoteAddressColor = colors.black
+remoteIrisOpen = nil
 firstTimeGate = true
 
 function clear(x, y, color_back)
@@ -156,7 +157,7 @@ security_locked = "LOCKED"
 security_diable = "DIABLE"
 
 settings = {maxEnergy = 51000, twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
-currentPages = {dialPage = 1, securityPage = 1, historyPageMode1 = 1, historyPageMode2 = 1} -- TODO Add temp variables for saving on which page you were? (dial/security/history(and history has 2 modes))
+currentPages = {dialPage = 1, securityPage = 1, historyPageMode1 = 1, historyPageMode2 = 1}
 stargates = {}
 history = {}
 
@@ -218,6 +219,8 @@ event_sgMessageReceived = "sgMessageReceived"
 event_sgIrisStateChange = "sgIrisStateChange"
 event_sgStargateStateChange = "sgStargateStateChange"
 event_sgChevronEngaged = "sgChevronEngaged"
+
+message_remoteIrisState = "remoteIrisState"
 
 -- ## STATIC VALUES END
 
@@ -530,7 +533,7 @@ function drawIrisButton()
 	elseif (isIrisClosed()) then
 		mon.setTextColor(colors.lime)
 	elseif (isIrisMoving()) then
-		mon.setTextColor(colors.blue) --FIXME/TODO remove this, when we have the event loop?
+		mon.setTextColor(colors.blue)
 	end
 	local label = "   IRIS  "
 	local i = 1
@@ -546,7 +549,7 @@ function isIrisButtonPressed(x_, y_)
 	return (x_ >= 6 and x_ <= 8) and (y_ >= (height / 3 - 2) and y_ <= (height / 3 * 2 + 1)) -- Tested on 05.01.2020 13:59
 end
 
-function drawRemoteIris(open) -- TODO Draw the remote iris gray if the state is unknown?
+function drawRemoteIris(open) -- TODO Use this in the drawMainMenu function, because if you were in another Menu, then return to main it should rewrite the remote iris state, if the stargate is still connected to the same stargate
 	if (open) then
 		mon.setTextColor(colors.lime)
 	else
@@ -554,6 +557,9 @@ function drawRemoteIris(open) -- TODO Draw the remote iris gray if the state is 
 	end
 	mon.setBackgroundColor(colors.black)
 	local temp = "IRIS"
+	if (open == nil) then
+		temp = temp + "?"
+	end
 	mon.setCursorPos((width - string.len(temp)) / 2, height / 2 + 3) -- TODO Check position
 	mon.write(temp)
 end
@@ -687,28 +693,6 @@ function isRingInnerPressed(x_, y_)
 	return (x_ >= 19 and x_ <=  31) and (y_ >= 6 and y_ <= 13) -- TODO Make modular <- ?
 end
 
-function drawSgStatus(status) -- FIXME Is this necessary?
-	--[[
-	if (not status) then
-		status = sg.stargateState()
-	end
-	if (status ~= stargate_state_idle) then
-		local l = string.len(status)
-		mon.setBackgroundColor(colors.black)
-		if (status == stargate_state_connected) then
-			mon.setTextColor(colors.lightBlue)
-			--drawRemoteAddress() -- FIXME necessary?
-			--sg.sendMessage("irisState") -- FIXME ?
-		elseif (status == stargate_state_dialling) then
-			mon.setTextColor(colors.orange)
-		else
-			mon.setTextColor(colors.green)
-		end
-		mon.setCursorPos(width / 2, )
-	end
-	]]--
-end
-
 -- ###### Stargate END
 
 function drawHistoryButton()
@@ -739,7 +723,6 @@ function drawDialButton()
 	mon.setBackgroundColor(colors.lightGray)
 	mon.setTextColor(colors.black)
 	if (state ~= stargate_state_idle) then
-		--mon.setBackgroundColor(colors.gray) -- TODO Remove
 		label = dial_button_keep
 		if (settings.keepOpen and settings.keepOpen or false) then
 			mon.setTextColor(colors.lime)
@@ -1500,14 +1483,17 @@ while true do
 		logDial(remoteAddress_, timestamp, false)
 		repaintMenu()
 	elseif (event == event_sgMessageReceived) then
-		print("Message Received: " .. param_2)
-		-- TODO store the remote iris state? because what if you are in another menu and return to the main menu?
-		if (menu == menu_main) then
-			if (param_1 == "remoteIrisState") then -- FIXME Removed hardcoded name and test if "param_1" is the correct variable!
-				drawRemoteIris(param_2.irisOpen)
+		print("Message Received: " .. param_2) -- DEBUG
+		if (param_1 == message_remoteIrisState) then
+			if (param_2.irisOpen) then
+				remoteIrisOpen = true
+			else
+				remoteIrisOpen = nil
+			end
+			if (menu == menu_main) then
+				drawRemoteIris(param_2.irisOpen) -- REMOVE
 			end
 		end
-		--TODO Redraw remote iris, if incoming message updates the remote iris state
 	elseif (event == event_sgIrisStateChange) then
 		if (menu == menu_main) then
 			drawIrisButton()
