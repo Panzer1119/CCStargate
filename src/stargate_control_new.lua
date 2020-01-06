@@ -633,10 +633,13 @@ function drawRemoteIris(open) -- TODO Use this in the drawMainMenu function, bec
 	end
 	mon.setBackgroundColor(colors.black)
 	local temp = "IRIS"
+	local offset_ = string.len(temp)
 	if (open == nil) then
-		temp = temp + "?"
+		temp = temp .. "?"
 	end
-	mon.setCursorPos((width - string.len(temp)) / 2, height / 2 + 3) -- TODO Check position
+	mon.setCursorPos((width + offset_) / 2, height / 2 + 3)
+	mon.write(" ")
+	mon.setCursorPos((width - offset_) / 2, height / 2 + 3) -- TODO Check position
 	mon.write(temp)
 end
 
@@ -1568,15 +1571,14 @@ while true do
 		repaintMenu()
 		-- TODO toggleIrisOnIncomingDial?
 	elseif (event == event_sgMessageReceived) then
-		print("Message Received: " .. param_2) -- DEBUG
-		if (param_1 == message_remoteIrisState) then
-			if (param_2.irisOpen) then
-				remoteIrisOpen = true
-			else
-				remoteIrisOpen = nil
-			end
-			if (menu == menu_main) then
-				drawRemoteIris(param_2.irisOpen) -- REMOVE
+		-- TODO Implement functions, that you can remotely open the other iris with sending a (secret) code and receive it here
+		--print("Message Received: " .. param_2) -- DEBUG
+		if (param_2.message) then
+			if (param_2.message == message_remoteIrisState) then
+				remoteIrisOpen = param_2.irisOpen
+				if (menu == menu_main) then
+					drawRemoteIris(remoteIrisOpen) -- REMOVE
+				end
 			end
 		end
 	elseif (event == event_sgIrisStateChange) then
@@ -1584,7 +1586,7 @@ while true do
 			drawIrisButton()
 		end
 		if (sg.remoteAddress() ~= nil) then
-			sg.sendMessage("remoteIrisState", {irisOpen = param_2 == iris_state_open})
+			sg.sendMessage({message = message_remoteIrisState, irisOpen = param_2 == iris_state_open})
 		end
 	elseif (event == event_sgStargateStateChange) then
 		print("sgStargateStateChange=" .. param_2) -- DEBUG
