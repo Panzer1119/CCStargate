@@ -20,7 +20,7 @@ mon = peripheral.find("monitor")
 
 MON_WIDTH = 50
 MON_HEIGHT = 19
---MON_HEIGHT = 26
+--MON_HEIGHT = 26 -- REMOVE
 
 width, height = mon.getSize()
 
@@ -92,7 +92,7 @@ end
 
 function getStargateByAddress(stargates_, address)
 	return utils.getTableFromArray(stargates_, address, getAddress)
-	--[[
+	--[[ -- REMOVE
 	if (string.len(address) == 7) then
 		return utils.getTableFromArray(stargates_, address, getAddressShort)
 	else
@@ -133,7 +133,7 @@ function formatAddressToHiphons(address)
 end
 
 function isHistoryEmpty()
-	return (history == nil) or (#history == 0)
+	return not history or #history == 0
 end
 
 timerId = nil
@@ -156,7 +156,7 @@ security_none = "NONE"
 security_locked = "LOCKED"
 security_diable = "DIABLE"
 
-settings = {maxEnergy = 51000, twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
+settings = {maxEnergy = 51000, twentyFourHour = true, dateInDays = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
 currentPages = {dialPage = 1, securityPage = 1, historyPageMode1 = 1, historyPageMode2 = 1}
 stargates = {}
 history = {}
@@ -205,6 +205,10 @@ ring_height = 11
 list_offset = 1
 entries_per_page = 15
 
+average_days_per_year = 365.25
+last_date_length = 0
+last_time_length = 0
+
 button_add_address = "Add Address"
 button_back = "BACK"
 button_block = "BLOCK"
@@ -224,11 +228,55 @@ message_remoteIrisState = "remoteIrisState"
 
 -- ## STATIC VALUES END
 
+-- ###### UTIL BEGIN
+
+-- Page Infos BEGIN
+
+function getMaxPage(array)
+	return math.ceil(#array / entries_per_page)
+end
+
+function getOrCorrectPage(array, page)
+	return math.min(page, getMaxPage(array))
+end
+
+function getPageInfos(array, page)
+	local page_ = getOrCorrectPage(array, page)
+	local pageMax_ = getMaxPage(array)
+	local offset_ = (page_ - 1) * entries_per_page
+	local maxOnPage_ = math.min(#array, page_ * entries_per_page)
+	return page_, pageMax_, offset_, maxOnPage_
+end
+
+function getStargatePageInfos(page)
+	return getPageInfos(stargates, page)
+end
+
+function getDiableStargatePageInfos(page)
+	local page_, pageMax_, offset_, maxOnPage_ = getPageInfos(stargates, page)
+	local temp = 0
+	for i, n in ipairs(stargates) do
+		if (not n.locked) then
+			temp = temp + 1
+		end
+	end
+	if (maxOnPage_ > temp) then
+		maxOnPage_ = temp
+	end
+	return page_, pageMax_, offset_, maxOnPage_
+end
+
+-- TODO Create "get...PageInfos" functions for the security list and both the history lists
+
+-- Page Infos END
+
+-- ###### UTIL END
+
 -- ###### LOAD BEGIN
 
 function loadSettings()
 	if (not fs.exists(file_settings)) then
-		settings = {maxEnergy = 51000, twentyFourHour = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
+		settings = {maxEnergy = 51000, twentyFourHour = true, dateInDays = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
 		saveSettings()
 	end
 	settings = utils.readTableFromFile(file_settings)
@@ -360,7 +408,12 @@ function drawHeader(full, color_back, color_text)
 end
 
 function getFormattedDate()
-	return "Day " .. os.day()
+	if (settings.dateInDays) then
+		local day = os.day()
+		return "Year " .. math.floor(day / average_days_per_year) .. ", Day " .. (day % average_days_per_year)
+	else
+		return "Day " .. os.day()
+	end
 end
 
 function getFormattedTime()
@@ -373,7 +426,9 @@ end
 
 function drawDate()
 	mon.setCursorPos(1, 1)
-	mon.write(getFormattedDate())
+	local date_ = getFormattedDate()
+	last_date_length = string.len(date_)
+	mon.write(date_)
 end
 
 function drawTime(offset_right)
@@ -381,16 +436,44 @@ function drawTime(offset_right)
 		offset_right = 0
 	end
 	local time_formatted = getFormattedTime()
-	mon.setCursorPos(width - string.len(time_formatted) + 1 - offset_right, 1)
+	last_time_length = string.len(time_formatted) + 1 - offset_right
+	mon.setCursorPos(width - last_time_length, 1)
 	mon.write(time_formatted)
 end
 
-function isTimePressed(x_, y_)
+function isDatePressed(x_, y_)
+	return (x_ >= 1 and x_ <= last_date_length) and (y_ == 1)
+end
+
+function isTimePressed(x_, y_) -- TODO Test the last_time_length thing
+	if (menu == menu_main) then
+		return (x_ >= width - 6 - last_time_length and x_ <= width - 6) and (y_ == 1)
+	else
+		return (x_ >= width - last_time_length and x_ <= width) and (y_ == 1)
+	end
+	--[[
 	if (menu == menu_main) then
 		return (x_ >= width - 6 - (settings.twentyFourHour and 5 or 8) and x_ <= width - 6) and (y_ == 1)
 	else
 		return (x_ >= width - (settings.twentyFourHour and 5 or 8) and x_ <= width) and (y_ == 1)
 	end
+	]]--
+end
+
+function toggleDateFormat()
+	loadSettings()
+	if (settings.dateInDays == nil) then
+		settings.dateInDays = true
+	else
+		settings.dateInDays = not settings.dateInDays
+		mon.setBackgroundColor(colors.black)
+		mon.setCursorPos(1, 1)
+		for i = 1, last_date_length do
+			mon.write(" ")
+		end
+	end
+	saveSettings()
+	drawHeader()
 end
 
 function toggleTimeFormat()
@@ -934,11 +1017,11 @@ function drawSecurityList(page)
 		mon.write(temp)
 		mon.setCursorPos((width - string.len(stargate.name)) / 2 - 1, y_)
 		mon.write(stargate.name)
-		
-		
+
+
 		---- ####
-		
-		
+
+
 		--[[
 		local ok, energyNeeded = pcall(sg.energyToDial, stargate.address)
 		if (not energyNeeded) then
@@ -959,10 +1042,10 @@ function drawSecurityList(page)
 			mon.write("--")
 		end
 		]]--
-		
-		
+
+
 		---- ####
-		
+
 		drawX(y_)
 	end
 	updateSecurityList(page)
@@ -1196,7 +1279,7 @@ end
 
 function drawDialMenu()
 	drawHeader(false)
-	drawDialList(1)
+	drawDialList(currentPages.dialPage) -- TODO Return to the same page? And go to page 1 if you click between "Up" and "Down"? So you have a way to go fast to the first page
 	-- TODO
 end
 
@@ -1230,7 +1313,7 @@ function drawDialList(page)
 		--local stargate = getEntryOnPage(stargates, page, y_)
 		local stargate = stargates[getIndexForEntryOnDialPage(getIndexForEntryOnPage(page, y_))]
 		if (stargate == nil) then
-			print("That should not happen... (3t4zj7)")
+			print("That should not happen... (3t4zj7)") -- DEBUG
 			break
 		end
 		local temp = formatAddressToHiphons(stargate.address)
@@ -1336,7 +1419,7 @@ end
 
 function dial(address)
 	-- FIXME log?
-	print("Dialling " .. address)
+	print("Dialling " .. address) -- DEBUG
 	sg.dial(address)
 end
 
@@ -1358,7 +1441,7 @@ end
 
 
 
--- #### #### Test BEGIN
+-- #### #### Test BEGIN -- REMOVE
 
 --##--loadAll()
 
@@ -1387,7 +1470,6 @@ while true do
 	local event, param_1, param_2, param_3, param_4, param_5 = os.pullEvent()
 	if (event == event_timer) then
 		--repaintMenu() -- FIXME Update?
-		--drawHeader()
 		drawHeader()
 		if (menu == menu_main) then
 			drawPowerBar()
@@ -1396,15 +1478,15 @@ while true do
 	elseif (event == event_monitor_touch) then
 		local x_ = param_2
 		local y_ = param_3
-		print(event, param_1, param_2, param_3) -- FIXME Remove this
-		
-		--print("isRingInnerPressed=" .. tostring(isRingInnerPressed(x_, y_))) -- FIXME Remove this
-		--print("isTermButtonPressed=" .. tostring(isTermButtonPressed(x_, y_))) -- FIXME Remove this
-		
+		print(event, param_1, param_2, param_3) -- DEBUG
+
+		--print("isRingInnerPressed=" .. tostring(isRingInnerPressed(x_, y_))) -- REMOVE
+		--print("isTermButtonPressed=" .. tostring(isTermButtonPressed(x_, y_))) -- REMOVE
+
 		---- ## ## ## ## BEGIN ## ## ## ## ----
-		
+
 		local state, engaged, direction = sg.stargateState()
-		
+
 		if (menu == menu_dial) then
 			if (isBackButtonPressed(x_, y_)) then
 				drawMenu(menu_main)
@@ -1470,18 +1552,20 @@ while true do
 			-- TODO
 			-- TODO Page Up/Down?
 		end
-		
+
 		---- ## ## ## ##  END  ##  ## ## ## ----
 	elseif (event == event_sgDialIn) then
 		local remoteAddress_ = sg.remoteAddress()
 		local timestamp = time_utils.now()
 		logDial(remoteAddress_, timestamp, true)
 		repaintMenu()
+		-- TODO toggleIrisOnIncomingDial?
 	elseif (event == event_sgDialOut) then
 		local remoteAddress_ = sg.remoteAddress()
 		local timestamp = time_utils.now()
 		logDial(remoteAddress_, timestamp, false)
 		repaintMenu()
+		-- TODO toggleIrisOnIncomingDial?
 	elseif (event == event_sgMessageReceived) then
 		print("Message Received: " .. param_2) -- DEBUG
 		if (param_1 == message_remoteIrisState) then
@@ -1502,7 +1586,7 @@ while true do
 			sg.sendMessage("remoteIrisState", {irisOpen = param_2 == iris_state_open})
 		end
 	elseif (event == event_sgStargateStateChange) then
-		print("sgStargateStateChange=" .. param_2)
+		print("sgStargateStateChange=" .. param_2) -- DEBUG
 		if (param_2 == stargate_state_closing) then
 			testForKeepOpen()
 		else
