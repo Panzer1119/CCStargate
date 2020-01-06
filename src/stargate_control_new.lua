@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 06 Jan 2020 - 09:07 PM
+  Date: Edited 06 Jan 2020 - 09:37 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
