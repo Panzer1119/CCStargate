@@ -284,7 +284,12 @@ function getDiableStargatePageInfos(page)
 	return page_, pageMax_, offset_, maxOnPage_
 end
 
--- TODO Create "get...PageInfos" functions for the security list and both the history lists
+function getHistoryPageInfos(page)
+	local page_, pageMax_, offset_, maxOnPage_ = getPageInfos(history, page)
+	-- TODO Implement both methods for the 2 modes
+end
+
+-- TODO Create "get...PageInfos" functions for the 2? history lists
 
 -- Page Infos END
 
@@ -936,6 +941,101 @@ function drawScrollStuff(page, page_max)
 	end
 	s = "" .. page_max
 	mon.write(string.sub(s, 1, string.len(s) - 2))
+end
+
+function isScrollUpPressed(x_, y_)
+	return (x_ >= width - 3 and x_ <= width) and (y_ >= height - 2)
+end
+
+function isScrollResetPressed(x_, y_)
+	return (x_ >= width - 3 and x_ <= width) and (y_ == height - 1)
+end
+
+function isScrollDownPressed(x_, y_)
+	return (x_ >= width - 3 and x_ <= width) and (y_ >= height - 0)
+end
+
+function testForScroll(x_, y_)
+	if (testForScrollUp(x_, y_)) then
+		return true
+	elseif (testForScrollReset(x_, y_)) then
+		return true
+	elseif (testForScrollDown(x_, y_)) then
+    	return true
+	end
+	return false
+end
+
+function testForScrollUp(x_, y_)
+	if (isScrollUpPressed(x_, y_)) then
+		scrollUpPressed()
+		return true
+	end
+	return false
+end
+
+function testForScrollReset(x_, y_)
+	if (isScrollResetPressed(x_, y_)) then
+		scrollRestPressed()
+		return true
+	end
+	return false
+end
+
+function testForScrollDown(x_, y_)
+	if (isScrollDownPressed(x_, y_)) then
+		scrollDownPressed()
+		return true
+	end
+	return false
+end
+
+function scrollUpPressed()
+	setCurrentPage(getCurrentPage() - 1)
+	drawMenu()
+end
+
+function scrollRestPressed()
+	setCurrentPage(1)
+	drawMenu()
+end
+
+function scrollDownPressed()
+	setCurrentPage(getCurrentPage() + 1)
+	drawMenu()
+end
+
+function getCurrentPage()
+	if (menu == menu_dial) then
+		return currentPages.dialPage
+	elseif (menu == menu_security) then
+		return currentPages.securityPage
+	elseif (menu == menu_history) then
+		if (settings.history_distinct) then
+			return currentPages.historyPageMode1
+		else
+			return currentPages.historyPageMode2
+		end
+	end
+	return nil
+end
+
+function setCurrentPage(page)
+	if (tempGlobal.pageMax_ ~= nil) then
+		page = math.min(page, tempGlobal.pageMax_) -- TODO Do not forget to set "tempGlobal.pageMax_" everytime you use pageMax_ somewhere from the "getPageInfos" functions!
+	end
+	page = math.max(0, page)
+	if (menu == menu_dial) then
+		currentPages.dialPage = page
+	elseif (menu == menu_security) then
+		currentPages.securityPage = page
+	elseif (menu == menu_history) then
+		if (settings.history_distinct) then
+			currentPages.historyPageMode1 = page
+		else
+			currentPages.historyPageMode2 = page
+		end
+	end
 end
 
 function getColorForEntryOnPage(page, i)
