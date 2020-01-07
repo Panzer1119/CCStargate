@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 06 Jan 2020 - 09:37 PM
+  Date: Edited 07 Jan 2020 - 08:20 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -263,7 +263,7 @@ function getPageInfos(array, page)
     local page_ = getOrCorrectPage(array, page)
     local pageMax_ = getMaxPage(array)
     local offset_ = (page_ - 1) * entries_per_page
-    local maxOnPage_ = math.min(#array, page_ * entries_per_page)
+    local maxOnPage_ = math.min(#array, page_ * entries_per_page) - offset_
     return page_, pageMax_, offset_, maxOnPage_
 end
 
@@ -279,9 +279,7 @@ function getDiableStargatePageInfos(page)
             temp = temp + 1
         end
     end
-    if (maxOnPage_ > temp) then
-        maxOnPage_ = temp
-    end
+    maxOnPage_ = math.min(temp, page_ * entries_per_page) - offset_
     return page_, pageMax_, offset_, maxOnPage_
 end
 
@@ -892,11 +890,11 @@ end
 -- #### List Menus BEGIN
 
 function drawPreList(page, page_max, color_back)
-    loadSettings()
+    --loadSettings() -- REMOVE
     --settings.temp_page = page -- REMOVE
     --settings.temp_page_max = page_max -- REMOVE
-    saveSettings()
-    for y_ = 1 + list_offset, entries_per_page + list_offset do
+    --saveSettings() -- REMOVE
+    for y_ = 1 + list_offset, 1 + list_offset + entries_per_page - 1 do
         mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
         for x_ = 1, width do
             mon.setCursorPos(x_, y_)
@@ -910,7 +908,7 @@ end
 function drawBottom(color_back)
     mon.setBackgroundColor(color_back and color_back or colors.black)
     mon.setTextColor(colors.black)
-    for y_ = entries_per_page + 1 + list_offset, height do
+    for y_ = 1 + list_offset + entries_per_page, height do
         for x_ = 1, width - 6 do
             mon.setCursorPos(x_, y_)
             mon.write(" ")
@@ -921,7 +919,7 @@ end
 function drawScrollStuff(page, page_max)
     mon.setBackgroundColor(colors.white)
     mon.setTextColor(colors.black)
-    for y_ = entries_per_page + 1 + list_offset, height do
+    for y_ = 1 + list_offset + entries_per_page, height do
         mon.setCursorPos(width - 5, y_)
         mon.write("      ")
     end
@@ -946,7 +944,7 @@ function drawScrollStuff(page, page_max)
 end
 
 function isScrollUpPressed(x_, y_)
-    return (x_ >= width - 3 and x_ <= width) and (y_ >= height - 2)
+    return (x_ >= width - 3 and x_ <= width) and (y_ == height - 2)
 end
 
 function isScrollResetPressed(x_, y_)
@@ -954,7 +952,7 @@ function isScrollResetPressed(x_, y_)
 end
 
 function isScrollDownPressed(x_, y_)
-    return (x_ >= width - 3 and x_ <= width) and (y_ >= height - 0)
+    return (x_ >= width - 3 and x_ <= width) and (y_ == height - 0)
 end
 
 function testForScroll(x_, y_)
@@ -993,18 +991,21 @@ function testForScrollDown(x_, y_)
 end
 
 function scrollUpPressed()
+    print("Scroll Up: getCurrentPage()=" .. getCurrentPage()) -- DEBUG
     setCurrentPage(getCurrentPage() - 1)
-    drawMenu()
+    repaintMenu()
 end
 
 function scrollRestPressed()
+    print("Scroll Reset: getCurrentPage()=" .. getCurrentPage()) -- DEBUG
     setCurrentPage(1)
-    drawMenu()
+    repaintMenu()
 end
 
 function scrollDownPressed()
+    print("Scroll Down: getCurrentPage()=" .. getCurrentPage()) -- DEBUG
     setCurrentPage(getCurrentPage() + 1)
-    drawMenu()
+    repaintMenu()
 end
 
 function getCurrentPage()
@@ -1023,10 +1024,12 @@ function getCurrentPage()
 end
 
 function setCurrentPage(page)
+    print("setCurrentPage BEFORE: menu=" .. menu .. ", page=" .. page .. ", tempGlobal.pageMax_=" .. tempGlobal.pageMax_) -- DEBUG -- REMOVE
     if (tempGlobal.pageMax_ ~= nil) then
         page = math.min(page, tempGlobal.pageMax_) -- TODO Do not forget to set "tempGlobal.pageMax_" everytime you use pageMax_ somewhere from the "getPageInfos" functions!
     end
-    page = math.max(0, page)
+    page = math.max(1, page)
+    print("setCurrentPage AFTER : menu=" .. menu .. ", page=" .. page .. ", tempGlobal.pageMax_=" .. tempGlobal.pageMax_) -- DEBUG -- REMOVE
     if (menu == menu_dial) then
         currentPages.dialPage = page
     elseif (menu == menu_security) then
@@ -1120,9 +1123,7 @@ function drawSecurityList(page)
     if (max_ > #stargates) then
         max_ = #stargates
     end
-    loadSettings()
-    settings.temp_max_ = max_
-    saveSettings()
+    tempGlobal.pageMax_ = pageMax_
     local energyAvailable = sg.energyAvailable()
     for y_ = 1 + list_offset, max_ + list_offset do
         mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
@@ -1187,9 +1188,7 @@ function updateSecurityList(page)
     if (max_ > #stargates) then
         max_ = #stargates
     end
-    loadSettings()
-    settings.temp_max_ = max_
-    saveSettings()
+    tempGlobal.pageMax_ = pageMax_
     for y_ = 1 + list_offset, max_ + list_offset do
         local stargate = getEntryOnPage(stargates, page, y_)
         mon.setBackgroundColor(getSecurityBackgroundColor(stargate.state))
@@ -1289,9 +1288,7 @@ function drawHistoryList(page)
         if (max_ > #history) then
             max_ = #history
         end
-        loadSettings()
-        settings.temp_max_ = max_
-        saveSettings()
+        tempGlobal.pageMax_ = pageMax_
         for y_ = 1 + list_offset, max_ + list_offset do
             local i_ = getIndexForEntryOnPage(page, y_)
             local stargate = history[i_]
@@ -1348,9 +1345,7 @@ function drawHistoryList(page)
                 max_ = #history
             end
         end
-        loadSettings()
-        settings.temp_max_ = max_
-        saveSettings()
+        tempGlobal.pageMax_ = pageMax_
         print("TODO") -- TODO
     end
     drawSmallBackButton()
@@ -1402,32 +1397,17 @@ end
 function drawDialList(page)
     currentPages.dialPage = page
     loadStargates()
-    local offset_ = (page - 1) * entries_per_page
-    local max_ = page * entries_per_page
-    if (max_ > #stargates) then
-        max_ = #stargates
-    end
-    local temp = 0
-    for i, n in ipairs(stargates) do
-        if (not n.locked) then
-            temp = temp + 1
-        end
-    end
-    if (max_ > temp) then
-        max_ = temp
-    end
-    local page_max = math.ceil(max_ / entries_per_page)
-    drawPreList(page, page_max)
-    loadSettings()
-    settings.temp_max_ = max_
-    saveSettings()
+    local page_, pageMax_, offset_, maxOnPage_ = getDiableStargatePageInfos(page)
+    print("page_=" .. page_ .. ", pageMax_=" .. pageMax_ .. ", offset_=" .. offset_ .. ", maxOnPage_=" .. maxOnPage_)
+    tempGlobal.pageMax_ = pageMax_
+    drawPreList(page_, pageMax_)
     local energyAvailable = sg.energyAvailable()
-    for y_ = 1 + list_offset + offset_, max_ + list_offset + offset_ do
-        mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
+    for y_ = 1 + list_offset, 1 + list_offset + maxOnPage_ - 1 do
+        mon.setBackgroundColor(getColorForEntryOnPage(page_, y_))
         mon.setTextColor(colors.black)
         mon.setCursorPos(1, y_)
         --local stargate = getEntryOnPage(stargates, page, y_)
-        local stargate = stargates[getIndexForEntryOnDialPage(getIndexForEntryOnPage(page, y_))]
+        local stargate = stargates[getIndexForEntryOnDialPage(getIndexForEntryOnPage(page_, y_))]
         if (stargate == nil) then
             print("That should not happen... (3t4zj7)") -- DEBUG
             break
@@ -1457,8 +1437,8 @@ function drawDialList(page)
         drawX(y_)
     end
     mon.setTextColor(colors.black)
-    for y_ = max_ + 1 + list_offset, entries_per_page + list_offset do
-        mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
+    for y_ = 1 + list_offset + maxOnPage_, 1 + list_offset + entries_per_page do
+        mon.setBackgroundColor(getColorForEntryOnPage(page_, y_))
         mon.setCursorPos((width - string.len(button_add_address)) / 2 + 1, y_)
         mon.write(button_add_address)
     end
@@ -1611,8 +1591,8 @@ while true do
                 dialMenuXPressed(y_)
             elseif (isDialEntryPressed(x_, y_)) then
                 dialEntryPressed(y_)
+            elseif (testForScroll(x_, y_)) then
             end
-            -- TODO Page Up/Down?
         elseif (menu == menu_history) then
             if (isSmallBackButtonPressed(x_, y_)) then
                 drawMenu(menu_main)
@@ -1622,9 +1602,9 @@ while true do
                 toggleTimeFormat()
             elseif (isXPressed(x_, y_)) then
                 historyMenuXPressed(y_) -- TODO !!!
+            elseif (testForScroll(x_, y_)) then
             end
             -- TODO
-            -- TODO Page Up/Down?
         elseif (menu == menu_main) then
             if (isRingInnerPressed(x_, y_)) then
                 if (state == stargate_state_idle) then
@@ -1669,9 +1649,9 @@ while true do
                 toggleTimeFormat()
             elseif (isXPressed(x_, y_)) then
                 securityMenuXPressed(y_)
+            elseif (testForScroll(x_, y_)) then
             end
             -- TODO
-            -- TODO Page Up/Down?
         end
 
         ---- ## ## ## ##  END  ##  ## ## ## ----
