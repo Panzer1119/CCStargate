@@ -206,8 +206,8 @@ list_offset = 1
 entries_per_page = 15
 
 average_days_per_year = 365.25
-last_date_length = 0
-last_time_length = 0
+last_date_length = 0 -- FIXME this is not a static value, maybe create a new block for dynamic values?
+last_time_length = 0 -- FIXME this is not a static value, maybe create a new block for dynamic values?
 
 button_add_address = "Add Address"
 button_back = "BACK"
