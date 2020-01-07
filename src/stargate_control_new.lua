@@ -12,15 +12,98 @@
 
 os.loadAPI("lib/utils.lua")
 
+-- ## ## GLOBAL VALUES BEGIN ## ##
+
+-- ## FINAL VALUES BEGIN ##
+
 PROGRAM_NAME = "Stargate Control"
 PROGRAM_NAME_SHORT = "SG Control"
-
-sg = peripheral.find("stargate")
-mon = peripheral.find("monitor")
 
 MON_WIDTH = 50
 MON_HEIGHT = 19
 --MON_HEIGHT = 26 -- REMOVE
+
+menu_main = "main"
+menu_security = "security"
+menu_history = "history"
+menu_dial = "dial"
+
+security_allow = "ALLOW"
+security_deny = "DENY"
+security_none = "NONE"
+
+security_locked = "LOCKED"
+security_diable = "DIABLE"
+
+folder_stargate = "stargate"
+file_settings = folder_stargate .. "/settings.lon"
+file_stargates = folder_stargate .. "/stargates.lon"
+file_history = folder_stargate .. "/history.lon"
+
+security_color_allow = colors.white
+security_color_text_allow = colors.black
+security_color_deny = colors.black
+security_color_text_deny = colors.white
+security_color_none = colors.gray
+security_color_text_none = colors.white
+
+security_color_locked = colors.gray
+security_color_text_locked = colors.red
+security_color_diable = colors.gray
+security_color_text_diable = colors.black
+
+iris_state_offline = "Offline"
+iris_state_closed = "Closed"
+iris_state_open = "Open"
+iris_state_opening = "Opening"
+iris_state_closing = "Closing"
+
+stargate_state_connected = "Connected"
+stargate_state_connecting = "Connecting"
+stargate_state_dialling = "Dialling"
+stargate_state_closing = "Closing"
+stargate_state_idle = "Idle"
+
+dial_button_standard = "DIAL"
+dial_button_keep = "KEEP"
+dial_button_hold = "HOLD"
+
+history_distinct = "DISTINCT"
+history_normal = "NORMAL"
+
+term_button_standard = "TERM"
+
+ring_width = 19
+ring_height = 11
+
+list_offset = 1
+entries_per_page = 15
+
+average_days_per_year = 365.25
+
+button_add_address = "Add Address"
+button_back = "BACK"
+button_block = "BLOCK"
+button_save = "SAVE"
+
+event_rednet_message = "rednet_message"
+event_timer = "timer"
+event_monitor_touch = "monitor_touch"
+event_sgDialIn = "sgDialIn"
+event_sgDialOut = "sgDialOut"
+event_sgMessageReceived = "sgMessageReceived"
+event_sgIrisStateChange = "sgIrisStateChange"
+event_sgStargateStateChange = "sgStargateStateChange"
+event_sgChevronEngaged = "sgChevronEngaged"
+
+message_remoteIrisState = "remoteIrisState"
+
+-- ## FINAL VALUES END ##
+
+-- ## DYNAMIC VALUES BEGIN ##
+
+sg = peripheral.find("stargate")
+mon = peripheral.find("monitor")
 
 width, height = mon.getSize()
 
@@ -28,6 +111,23 @@ remoteAddress = ""
 remoteAddressColor = colors.black
 remoteIrisOpen = nil
 firstTimeGate = true
+
+menu = nil
+
+settings = {maxEnergy = 51000, twentyFourHour = true, dateInDays = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
+tempGlobal = {}
+currentPages = {dialPage = 1, securityPage = 1, historyPageMode1 = 1, historyPageMode2 = 1}
+stargates = {}
+history = {}
+
+last_date_length = 0
+last_time_length = 0
+
+timerId = nil
+
+-- ## DYNAMIC VALUES END ##
+
+-- ## ## GLOBAL VALUES END ## ##
 
 function clear(x, y, color_back)
 	mon.setBackgroundColor(color_back and color_back or colors.black)
@@ -45,12 +145,6 @@ if (height ~= MON_HEIGHT) then
 	mon.write("Monitor size does not match the requirements! (height is " .. height .. ", but should be " .. MON_HEIGHT .. ")")
 	error("Monitor size does not match the requirements! (height is " .. height .. ", but should be " .. MON_HEIGHT .. ")")
 end
-
-menu_main = "main"
-menu_security = "security"
-menu_history = "history"
-menu_dial = "dial"
-menu = nil
 
 -- Functions for searching an array for a table BEGIN
 
@@ -136,8 +230,6 @@ function isHistoryEmpty()
 	return not history or #history == 0
 end
 
-timerId = nil
-
 function resetTimer(time_)
 	if (not time_ or time_ <= 0) then
 		time_ = 4
@@ -145,88 +237,14 @@ function resetTimer(time_)
 	timerId = os.startTimer(time_)
 end
 
+function resetTempSettings() -- REMOVE
+	--settings.temp_forceTerm = nil -- REMOVE
+	--settings.temp_page = nil -- REMOVE
+	--settings.temp_max_ = nil -- REMOVE
+	--settings.temp_page_max = nil -- REMOVE
+end
+
 -- Misc END
-
--- ## STATIC VALUES BEGIN
-
-security_allow = "ALLOW"
-security_deny = "DENY"
-security_none = "NONE"
-
-security_locked = "LOCKED"
-security_diable = "DIABLE"
-
-settings = {maxEnergy = 51000, twentyFourHour = true, dateInDays = true, keepOpen = false, irisOnIncomingDial = security_none, history_distinct = false}
-currentPages = {dialPage = 1, securityPage = 1, historyPageMode1 = 1, historyPageMode2 = 1}
-stargates = {}
-history = {}
-
-folder_stargate = "stargate"
-file_settings = folder_stargate .. "/settings.lon"
-file_stargates = folder_stargate .. "/stargates.lon"
-file_history = folder_stargate .. "/history.lon"
-
-security_color_allow = colors.white
-security_color_text_allow = colors.black
-security_color_deny = colors.black
-security_color_text_deny = colors.white
-security_color_none = colors.gray
-security_color_text_none = colors.white
-
-security_color_locked = colors.gray
-security_color_text_locked = colors.red
-security_color_diable = colors.gray
-security_color_text_diable = colors.black
-
-iris_state_offline = "Offline"
-iris_state_closed = "Closed"
-iris_state_open = "Open"
-iris_state_opening = "Opening"
-iris_state_closing = "Closing"
-
-stargate_state_connected = "Connected"
-stargate_state_connecting = "Connecting"
-stargate_state_dialling = "Dialling"
-stargate_state_closing = "Closing"
-stargate_state_idle = "Idle"
-
-dial_button_standard = "DIAL"
-dial_button_keep = "KEEP"
-dial_button_hold = "HOLD"
-
-history_distinct = "DISTINCT"
-history_normal = "NORMAL"
-
-term_button_standard = "TERM"
-
-ring_width = 19
-ring_height = 11
-
-list_offset = 1
-entries_per_page = 15
-
-average_days_per_year = 365.25
-last_date_length = 0 -- FIXME this is not a static value, maybe create a new block for dynamic values?
-last_time_length = 0 -- FIXME this is not a static value, maybe create a new block for dynamic values?
-
-button_add_address = "Add Address"
-button_back = "BACK"
-button_block = "BLOCK"
-button_save = "SAVE"
-
-event_rednet_message = "rednet_message"
-event_timer = "timer"
-event_monitor_touch = "monitor_touch"
-event_sgDialIn = "sgDialIn"
-event_sgDialOut = "sgDialOut"
-event_sgMessageReceived = "sgMessageReceived"
-event_sgIrisStateChange = "sgIrisStateChange"
-event_sgStargateStateChange = "sgStargateStateChange"
-event_sgChevronEngaged = "sgChevronEngaged"
-
-message_remoteIrisState = "remoteIrisState"
-
--- ## STATIC VALUES END
 
 -- ###### UTIL BEGIN
 
@@ -853,8 +871,8 @@ function testForKeepOpen() -- TODO The stargate is not showing the dial animatio
 	loadSettings()
 	if (settings.keepOpen and settings.last) then
 		sleep(3)
-		if (settings.temp_forceTerm) then
-			settings.temp_forceTerm = nil
+		if (tempGlobal.forceTermination) then
+			tempGlobal.forceTermination = nil
 			repaintMenu()
 			return
 		end
@@ -868,8 +886,8 @@ end
 
 function drawPreList(page, page_max, color_back)
 	loadSettings()
-	settings.temp_page = page
-	settings.temp_page_max = page_max
+	--settings.temp_page = page -- REMOVE
+	--settings.temp_page_max = page_max -- REMOVE
 	saveSettings()
 	for y_ = 1 + list_offset, entries_per_page + list_offset do
 		mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
@@ -1136,10 +1154,10 @@ end
 
 function securityMenuXPressed(y_)
 	loadSettings()
-	local page = settings.temp_page
-	local page_max = settings.temp_page_max
-	local max_ = settings.temp_max_
-	local i_ = getIndexForEntryOnPage(page, y_)
+	--local page = settings.temp_page -- REMOVE
+	--local page_max = settings.temp_page_max -- REMOVE
+	--local max_ = settings.temp_max_ -- REMOVE
+	local i_ = getIndexForEntryOnPage(currentPages.securityPage, y_) -- FIXME Check this page stuff
 	if (i_ > max_) then
 		return
 	end
@@ -1354,10 +1372,10 @@ end
 
 function dialMenuXPressed(y_)
 	loadSettings()
-	local page = settings.temp_page
-	local page_max = settings.temp_page_max
-	local max_ = settings.temp_max_
-	local i_ = getIndexForEntryOnPage(page, y_)
+	--local page = settings.temp_page -- REMOVE
+	--local page_max = settings.temp_page_max -- REMOVE
+	--local max_ = settings.temp_max_ -- REMOVE
+	local i_ = getIndexForEntryOnPage(currentPages.dialPage, y_) -- FIXME Check this page stuff
 	if (i_ > max_) then
 		return
 	end
@@ -1455,10 +1473,7 @@ end
 
 
 loadAll()
-settings.temp_forceTerm = nil
-settings.temp_page = nil
-settings.temp_max_ = nil
-settings.temp_page_max = nil
+resetTempSettings()
 saveSettings()
 drawMenu(menu_main, true)
 resetTimer()
@@ -1519,7 +1534,7 @@ while true do
 				end
 			elseif (isTermButtonPressed(x_, y_)) then
 				loadSettings()
-				settings.temp_forceTerm = true
+				tempGlobal.forceTermination = true
 				saveSettings()
 				sg.disconnect()
 				sleep(0.1) -- TODO Good?
