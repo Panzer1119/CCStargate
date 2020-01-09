@@ -1024,12 +1024,12 @@ function getCurrentPage()
 end
 
 function setCurrentPage(page)
-    print("setCurrentPage BEFORE: menu=" .. menu .. ", page=" .. page .. ", tempGlobal.pageMax_=" .. tempGlobal.pageMax_) -- DEBUG -- REMOVE
+    print("setCurrentPage BEFORE: menu=" .. menu .. ", page=" .. page .. ", tempGlobal.pageMax_=" .. (tempGlobal.pageMax_ and tempGlobal.pageMax_ or "nil")) -- DEBUG -- REMOVE
     if (tempGlobal.pageMax_ ~= nil) then
         page = math.min(page, tempGlobal.pageMax_) -- TODO Do not forget to set "tempGlobal.pageMax_" everytime you use pageMax_ somewhere from the "getPageInfos" functions!
     end
     page = math.max(1, page)
-    print("setCurrentPage AFTER : menu=" .. menu .. ", page=" .. page .. ", tempGlobal.pageMax_=" .. tempGlobal.pageMax_) -- DEBUG -- REMOVE
+    print("setCurrentPage AFTER : menu=" .. menu .. ", page=" .. page .. ", tempGlobal.pageMax_=" .. (tempGlobal.pageMax_ and tempGlobal.pageMax_ or "nil")) -- DEBUG -- REMOVE
     if (menu == menu_dial) then
         currentPages.dialPage = page
     elseif (menu == menu_security) then
@@ -1108,28 +1108,26 @@ end
 
 function drawSecurityMenu()
     drawHeader(false)
-    drawSecurityList(1)
+    drawSecurityList(currentPages.securityPage)
     -- TODO
 end
 
 function drawSecurityList(page)
+    currentPages.dialPage = page
     loadStargates()
+    local page_, pageMax_, offset_, maxOnPage_ = getStargatePageInfos(page)
+    print("drawSecurityList: page_=" .. page_ .. ", pageMax_=" .. pageMax_ .. ", offset_=" .. offset_ .. ", maxOnPage_=" .. maxOnPage_)
+    tempGlobal.pageMax_ = pageMax_
     loadSettings()
     local color_back = getSecurityBackgroundColor(settings.irisOnIncomingDial)
     local color_text = getSecurityTextColor(settings.irisOnIncomingDial)
-    local page_max = math.ceil(#stargates / entries_per_page)
-    drawPreList(page, page_max, color_back)
-    local max_ = page * entries_per_page
-    if (max_ > #stargates) then
-        max_ = #stargates
-    end
-    tempGlobal.pageMax_ = pageMax_
+    drawPreList(page_, pageMax_)
     local energyAvailable = sg.energyAvailable()
-    for y_ = 1 + list_offset, max_ + list_offset do
-        mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
+    for y_ = 1 + list_offset, 1 + list_offset + maxOnPage_ - 1 do
+        mon.setBackgroundColor(getColorForEntryOnPage(page_, y_))
         mon.setTextColor(colors.black)
         mon.setCursorPos(1, y_)
-        local stargate = getEntryOnPage(stargates, page, y_)
+        local stargate = getEntryOnPage(stargates, page_, y_)
         local temp = formatAddressToHiphons(stargate.address)
         mon.write(temp)
         mon.setCursorPos((width - string.len(stargate.name)) / 2 - 1, y_)
@@ -1165,10 +1163,10 @@ function drawSecurityList(page)
 
         drawX(y_)
     end
-    updateSecurityList(page)
+    updateSecurityList(page_, pageMax_, offset_, maxOnPage_)
     mon.setTextColor(colors.black)
-    for y_ = max_ + 1 + list_offset, entries_per_page + list_offset do
-        mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
+    for y_ = 1 + list_offset + maxOnPage_, 1 + list_offset + entries_per_page - 1 do
+        mon.setBackgroundColor(getColorForEntryOnPage(page_, y_))
         mon.setCursorPos((width - string.len(button_add_address)) / 2 + 1, y_)
         mon.write(button_add_address)
     end
@@ -1183,14 +1181,17 @@ function drawSecurityStandardButton(color_back, color_text)
     mon.write(settings.irisOnIncomingDial)
 end
 
-function updateSecurityList(page)
+function updateSecurityList(page_, pageMax_, offset_, maxOnPage_)
+    --[[
     local max_ = page * entries_per_page
     if (max_ > #stargates) then
         max_ = #stargates
     end
     tempGlobal.pageMax_ = pageMax_
-    for y_ = 1 + list_offset, max_ + list_offset do
-        local stargate = getEntryOnPage(stargates, page, y_)
+    ]]--
+    --for y_ = 1 + list_offset, max_ + list_offset do
+    for y_ = 1 + list_offset, 1 + list_offset + maxOnPage_ - 1 do
+        local stargate = getEntryOnPage(stargates, page_, y_)
         mon.setBackgroundColor(getSecurityBackgroundColor(stargate.state))
         mon.setTextColor(getSecurityTextColor(stargate.state))
         mon.setCursorPos(width - 6, y_)
@@ -1398,7 +1399,7 @@ function drawDialList(page)
     currentPages.dialPage = page
     loadStargates()
     local page_, pageMax_, offset_, maxOnPage_ = getDiableStargatePageInfos(page)
-    print("page_=" .. page_ .. ", pageMax_=" .. pageMax_ .. ", offset_=" .. offset_ .. ", maxOnPage_=" .. maxOnPage_)
+    print("drawDialList: page_=" .. page_ .. ", pageMax_=" .. pageMax_ .. ", offset_=" .. offset_ .. ", maxOnPage_=" .. maxOnPage_)
     tempGlobal.pageMax_ = pageMax_
     drawPreList(page_, pageMax_)
     local energyAvailable = sg.energyAvailable()
@@ -1437,7 +1438,7 @@ function drawDialList(page)
         drawX(y_)
     end
     mon.setTextColor(colors.black)
-    for y_ = 1 + list_offset + maxOnPage_, 1 + list_offset + entries_per_page do
+    for y_ = 1 + list_offset + maxOnPage_, 1 + list_offset + entries_per_page - 1 do
         mon.setBackgroundColor(getColorForEntryOnPage(page_, y_))
         mon.setCursorPos((width - string.len(button_add_address)) / 2 + 1, y_)
         mon.write(button_add_address)
@@ -1458,9 +1459,11 @@ function dialMenuXPressed(y_)
     --local page_max = settings.temp_page_max -- REMOVE
     --local max_ = settings.temp_max_ -- REMOVE
     local i_ = getIndexForEntryOnPage(currentPages.dialPage, y_) -- FIXME Check this page stuff
-    if (i_ > max_) then
+    --[[
+    if (i_ > max_) then -- FIXME Where the f does "max_" come from?!
         return
     end
+    ]]--
     -- FIXME Was ist mit den Verschiebungen, wenn Stargates locked (also nicht diable) sind, dann rutschen die Anderen ja in der Dial Liste nach oben
     --table.remove(stargates, i_)
     -- TODO Just lock the stargate
