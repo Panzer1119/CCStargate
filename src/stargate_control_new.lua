@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 07 Jan 2020 - 08:20 PM
+  Date: Edited 09 Jan 2020 - 09:36 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -1189,7 +1189,7 @@ function drawSecurityStandardButton(color_back, color_text)
 end
 
 function updateSecurityList(page_, pageMax_, offset_, maxOnPage_)
-    --[[
+    --[[-- REMOVE
     local max_ = page * entries_per_page
     if (max_ > #stargates) then
         max_ = #stargates
@@ -1374,7 +1374,7 @@ function drawHistoryList(page)
 
 
 
-    if (settings.history_distinct) then
+    if (settings.history_distinct) then -- TODO Move most of this to "updateHistoryList"?
         --[[ -- REMOVE
         if (max_ > #history) then
             max_ = #history
@@ -1473,6 +1473,127 @@ function drawHistoryList(page)
     -- TODO Save/Block Screens etc
 end
 
+function updateHistoryList(page_, pageMax_, offset_, maxOnPage_) -- TODO IMPLEMENT THIS AND IN THE "drawHistoryList" FUNCTION PROPERLY!!!
+    -- FIXME Clear the "SAVE" and "BLOCK" Buttons and the counter of "in" and "out" dials
+    --[[ -- REMOVE
+    local max_ = page * entries_per_page
+    if (max_ > #stargates) then
+        max_ = #stargates
+    end
+    tempGlobal.pageMax_ = pageMax_
+    ]]--
+    --for y_ = 1 + list_offset, max_ + list_offset do
+    --for y_ = 1 + list_offset, 1 + list_offset + maxOnPage_ - 1 do
+        --[[ -- REMOVE
+        local stargate = getEntryOnPage(stargates, page_, y_)
+        mon.setBackgroundColor(getSecurityBackgroundColor(stargate.state))
+        mon.setTextColor(getSecurityTextColor(stargate.state))
+        mon.setCursorPos(width - 6, y_)
+        mon.write(stargate.state)
+        if (stargate.state ~= security_allow) then
+            mon.write(" ")
+        end
+        mon.setBackgroundColor(getSecurity2BackgroundColor(stargate.locked))
+        mon.setTextColor(getSecurity2TextColor(stargate.locked))
+        mon.setCursorPos(width - 6 - 1 - 6, y_)
+        mon.write(stargate.locked and security_locked or security_diable)
+        ]]--
+    --end
+    if (settings.history_distinct) then
+        --[[ -- REMOVE
+        if (max_ > #history) then
+            max_ = #history
+        end
+        ]]--
+        --for y_ = 1 + list_offset, max_ + list_offset do -- REMOVE
+        for y_ = 1 + list_offset, 1 + list_offset + maxOnPage_ - 1 do
+            local i_ = getIndexForEntryOnPage(page_, y_)
+            local i__ = getIndexForEntryOnHistoryPage(i_)
+            local stargate = history[i__]
+            if (stargate.timestamps and #stargate.timestamps > 0) then
+                mon.setBackgroundColor(getColorForEntryOnPage(page_, y_))
+                mon.setTextColor(colors.black)
+                mon.setCursorPos(1, y_)
+                mon.write(stargate.address)
+                --local s = #stargate.timestamps .. " time(s)"
+                local ins = 0
+                local outs = 0
+                for i, n in ipairs(stargate.timestamps) do
+                    if (n.inc) then
+                        ins = ins + 1
+                    else
+                        outs = outs + 1
+                    end
+                end
+                --local s = ins .. " I / " .. outs .. " O"
+                --local s = ins .. "I/" .. outs .. "O"
+                local s = ins .. "/" .. outs
+                mon.setCursorPos(11, y_)
+                mon.write(s)
+                local stargate_ = getStargateByAddress(stargates, stargate.address)
+                if (stargate_) then
+                    mon.setCursorPos((width - string.len(stargate_.name)) / 2 + 1, y_)
+                    mon.write(stargate_.name)
+                else
+                    s = "Unknown"
+                    mon.setTextColor(colors.white)
+                    mon.setCursorPos((width - string.len(s)) / 2 + 1, y_)
+                    mon.write(s)
+                    mon.setBackgroundColor(colors.white)
+                    mon.setTextColor(colors.black)
+                    mon.setCursorPos(width - string.len(button_back) - 1 - 1 - string.len(button_save) - 1, y_)
+                    mon.write(button_save)
+                end
+                mon.setBackgroundColor(colors.black)
+                mon.setTextColor(colors.red)
+                mon.setCursorPos(width - string.len(button_back) - 1 - 1, y_)
+                mon.write(button_block)
+            end
+            drawX(y_) -- TODO Move this one up?
+        end
+    else
+        --[[ -- REMOVE
+        if (max_ > #history) then
+            local temp = 0
+            for i, n in ipairs(history) do
+                temp = temp + #n.timestamps
+            end
+            if (max_ > temp) then
+                max_ = temp
+            else
+                max_ = #history
+            end
+        end
+        ]]--
+        local last_id = -1
+        local timestamps_count = 0
+        for y_ = 1 + list_offset, 1 + list_offset + maxOnPage_ - 1 do
+            local i_ = getIndexForEntryOnPage(page_, y_)
+            local i__ = getIndexForEntryOnHistoryPage(i_)
+            if (last_id ~= i__) then
+                last_id = i__
+                timestamps_count = 0
+            end
+            timestamps_count = timestamps_count + 1
+            local stargate = history[i__]
+            -- FIXME What to do if "timestamps" is nil or empty?
+            local timestamp_ = stargate.timestamps[timestamps_count]
+
+
+            -- TEST BEGIN
+            mon.setBackgroundColor(getColorForEntryOnPage(page_, y_))
+            mon.setTextColor(colors.black)
+            mon.setCursorPos(1, y_)
+            mon.write(stargate.address)
+            -- TEST END
+
+
+            -- TODO
+            drawX(y_)
+        end
+    end
+end
+
 function drawHistoryStandardButton()
     mon.setBackgroundColor(colors.gray)
     mon.setTextColor(colors.white)
@@ -1484,6 +1605,7 @@ function updateHistoryStandardButton()
     drawBottom(colors.gray)
     drawSmallBackButton()
     drawHistoryStandardButton()
+    updateHistoryList(getHistoryPageInfos(settings.history_distinct and currentPages.historyPageMode1 or currentPages.historyPageMode2))
 end
 
 function isHistoryStandardButtonPressed(x_, y_)
