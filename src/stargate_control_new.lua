@@ -1219,6 +1219,10 @@ function isToggleLockButtonPressed(x_, y_)
     return (x_ >= width - 8 - 5 and x_ <= width - 8) and (y_ >= 1 + list_offset and y_ <= 1 + list_offset + entries_per_page)
 end
 
+function isToggleBehaviorButtonPressed(x_, y_)
+    return (x_ >= width - 2 - 4 and x_ <= width - 2) and (y_ >= 1 + list_offset and y_ <= 1 + list_offset + entries_per_page)
+end
+
 function testForSecurityStandardButton(x_, y_)
     if (isSecurityStandardButtonPressed(x_, y_)) then
         toggleSecurityStandard()
@@ -1226,8 +1230,10 @@ function testForSecurityStandardButton(x_, y_)
         return true
     elseif (isToggleLockButtonPressed(x_, y_)) then
         toggleLock(y_)
-    elseif (false) then
-        -- TODO Deny/Allow/None
+        return true
+    elseif (isToggleBehaviorButtonPressed(x_, y_)) then
+        toggleBehavior(y_)
+        return true
     end
     return false
 end
@@ -1245,7 +1251,6 @@ function toggleSecurityStandard()
 end
 
 function toggleLock(y_)
-    print("toggleLock: y_=" .. y_)
     local i_ = getIndexForEntryOnPage(currentPages.securityPage, y_)
     local i__ = getIndexForEntryOnSecurityPage(i_)
     local stargate = stargates[i__]
@@ -1253,6 +1258,21 @@ function toggleLock(y_)
         stargate.locked = false
     else
         stargate.locked = true
+    end
+    saveStargates()
+    repaintMenu()
+end
+
+function toggleBehavior(y_)
+    local i_ = getIndexForEntryOnPage(currentPages.securityPage, y_)
+    local i__ = getIndexForEntryOnSecurityPage(i_)
+    local stargate = stargates[i__]
+    if (stargate.state == security_allow) then
+        stargate.state = security_deny
+    elseif (stargate.state == security_deny) then
+        stargate.state = security_none
+    elseif (stargate.state == security_none) then
+        stargate.state = security_allow
     end
     saveStargates()
     repaintMenu()
