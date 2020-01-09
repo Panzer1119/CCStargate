@@ -1119,8 +1119,6 @@ function drawSecurityList(page)
     print("drawSecurityList: page_=" .. page_ .. ", pageMax_=" .. pageMax_ .. ", offset_=" .. offset_ .. ", maxOnPage_=" .. maxOnPage_)
     tempGlobal.pageMax_ = pageMax_
     loadSettings()
-    local color_back = getSecurityBackgroundColor(settings.irisOnIncomingDial)
-    local color_text = getSecurityTextColor(settings.irisOnIncomingDial)
     drawPreList(page_, pageMax_)
     local energyAvailable = sg.energyAvailable()
     for y_ = 1 + list_offset, 1 + list_offset + maxOnPage_ - 1 do
@@ -1170,8 +1168,7 @@ function drawSecurityList(page)
         mon.setCursorPos((width - string.len(button_add_address)) / 2 + 1, y_)
         mon.write(button_add_address)
     end
-    drawSmallBackButton()
-    drawSecurityStandardButton(color_back, color_text)
+    updateSecurityStandardButton()
 end
 
 function drawSecurityStandardButton(color_back, color_text)
@@ -1212,6 +1209,35 @@ function updateSecurityStandardButton()
     drawBottom(color_back)
     drawSmallBackButton()
     drawSecurityStandardButton(color_back, color_text)
+end
+
+function isSecurityStandardButtonPressed(x_, y_)
+    return (x_ >= 7 and x_ <= width - 7) and (y_ >= height - 3 and y_ <= height)
+end
+
+function testForSecurityStandardButton(x_, y_)
+    if (isSecurityStandardButtonPressed(x_, y_)) then
+        toggleSecurityStandard()
+        updateSecurityStandardButton()
+        return true
+    elseif (false) then
+        -- TODO Diable/Locked
+    elseif (false) then
+        -- TODO Deny/Allow/None
+    end
+    return false
+end
+
+function toggleSecurityStandard()
+    loadSettings()
+    if (settings.irisOnIncomingDial == security_deny) then
+        settings.irisOnIncomingDial = security_allow
+    elseif (settings.irisOnIncomingDial == security_allow) then
+        settings.irisOnIncomingDial = security_none
+    elseif (settings.irisOnIncomingDial == security_none) then
+        settings.irisOnIncomingDial = security_deny
+    end
+    saveSettings()
 end
 
 function getSecurityBackgroundColor(security)
@@ -1653,8 +1679,11 @@ while true do
             elseif (isXPressed(x_, y_)) then
                 securityMenuXPressed(y_)
             elseif (testForScroll(x_, y_)) then
+                -- Nothing
+            elseif (testForSecurityStandardButton(x_, y_)) then
+                -- Nothing
             end
-            -- TODO
+            -- TODO finished?
         end
 
         ---- ## ## ## ##  END  ##  ## ## ## ----
