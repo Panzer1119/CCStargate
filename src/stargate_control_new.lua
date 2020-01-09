@@ -1113,7 +1113,7 @@ function drawSecurityMenu()
 end
 
 function drawSecurityList(page)
-    currentPages.dialPage = page
+    currentPages.securityPage = page
     loadStargates()
     local page_, pageMax_, offset_, maxOnPage_ = getStargatePageInfos(page)
     print("drawSecurityList: page_=" .. page_ .. ", pageMax_=" .. pageMax_ .. ", offset_=" .. offset_ .. ", maxOnPage_=" .. maxOnPage_)
@@ -1212,7 +1212,11 @@ function updateSecurityStandardButton()
 end
 
 function isSecurityStandardButtonPressed(x_, y_)
-    return (x_ >= 7 and x_ <= width - 7) and (y_ >= height - 3 and y_ <= height)
+    return (x_ >= 7 and x_ <= width - 7) and (y_ >= height - 2 and y_ <= height)
+end
+
+function isToggleLockButtonPressed(x_, y_)
+    return (x_ >= width - 8 - 5 and x_ <= width - 8) and (y_ >= 1 + list_offset and y_ <= 1 + list_offset + entries_per_page)
 end
 
 function testForSecurityStandardButton(x_, y_)
@@ -1220,8 +1224,8 @@ function testForSecurityStandardButton(x_, y_)
         toggleSecurityStandard()
         updateSecurityStandardButton()
         return true
-    elseif (false) then
-        -- TODO Diable/Locked
+    elseif (isToggleLockButtonPressed(x_, y_)) then
+        toggleLock(y_)
     elseif (false) then
         -- TODO Deny/Allow/None
     end
@@ -1238,6 +1242,20 @@ function toggleSecurityStandard()
         settings.irisOnIncomingDial = security_deny
     end
     saveSettings()
+end
+
+function toggleLock(y_)
+    print("toggleLock: y_=" .. y_)
+    local i_ = getIndexForEntryOnPage(currentPages.securityPage, y_)
+    local i__ = getIndexForEntryOnSecurityPage(i_)
+    local stargate = stargates[i__]
+    if (stargate.locked) then
+        stargate.locked = false
+    else
+        stargate.locked = true
+    end
+    saveStargates()
+    repaintMenu()
 end
 
 function getSecurityBackgroundColor(security)
@@ -1292,6 +1310,10 @@ function securityMenuXPressed(y_)
     table.remove(stargates, i_)
     saveStargates()
     repaintMenu()
+end
+
+function getIndexForEntryOnSecurityPage(i_)
+    return i_
 end
 
 -- ###### Security Menu END
