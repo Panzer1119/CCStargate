@@ -285,7 +285,17 @@ end
 
 function getHistoryPageInfos(page)
     local page_, pageMax_, offset_, maxOnPage_ = getPageInfos(history, page)
-    -- TODO Implement both methods for the 2 modes
+    if (settings.history_distinct) then
+        -- TODO
+        return page_, pageMax_, offset_, maxOnPage_
+    else
+        local temp = 0
+        for i, n in ipairs(history) do
+            temp = temp + #n.timestamps
+        end
+        maxOnPage_ = math.min(temp, page_ * entries_per_page) - offset_
+        return page_, pageMax_, offset_, maxOnPage_
+    end
 end
 
 -- TODO Create "get...PageInfos" functions for the 2? history lists
@@ -1342,27 +1352,41 @@ end
 
 function drawHistoryMenu()
     drawHeader(false)
-    drawHistoryList(1)
+    drawHistoryList(settings.history_distinct and currentPages.historyPageMode1 or currentPages.historyPageMode2)
     -- TODO
 end
 
 function drawHistoryList(page)
+    if (settings.history_distinct) then
+        currentPages.historyPageMode1 = page
+    else
+        currentPages.historyPageMode2 = page
+    end
     loadSettings()
     loadHistory()
     loadStargates()
-    local page_max = math.ceil(#stargates / entries_per_page)
-    drawPreList(page, page_max, colors.gray)
-    local max_ = page * entries_per_page
+    local page_, pageMax_, offset_, maxOnPage_ = getHistoryPageInfos(page)
+    print("drawHistoryList: page_=" .. page_ .. ", pageMax_=" .. pageMax_ .. ", offset_=" .. offset_ .. ", maxOnPage_=" .. maxOnPage_)
+    tempGlobal.pageMax_ = pageMax_
+    loadSettings()
+    drawPreList(page_, pageMax_, colors.gray)
+    --for y_ = 1 + list_offset, 1 + list_offset + maxOnPage_ - 1 do -- REMOVE
+
+
+
     if (settings.history_distinct) then
+        --[[ -- REMOVE
         if (max_ > #history) then
             max_ = #history
         end
-        tempGlobal.pageMax_ = pageMax_
-        for y_ = 1 + list_offset, max_ + list_offset do
-            local i_ = getIndexForEntryOnPage(page, y_)
-            local stargate = history[i_]
+        ]]--
+        --for y_ = 1 + list_offset, max_ + list_offset do -- REMOVE
+        for y_ = 1 + list_offset, 1 + list_offset + maxOnPage_ - 1 do
+            local i_ = getIndexForEntryOnPage(page_, y_)
+            local i__ = getIndexForEntryOnHistoryPage(i_)
+            local stargate = history[i__]
             if (stargate.timestamps and #stargate.timestamps > 0) then
-                mon.setBackgroundColor(getColorForEntryOnPage(page, y_))
+                mon.setBackgroundColor(getColorForEntryOnPage(page_, y_))
                 mon.setTextColor(colors.black)
                 mon.setCursorPos(1, y_)
                 mon.write(stargate.address)
@@ -1403,6 +1427,7 @@ function drawHistoryList(page)
             drawX(y_) -- TODO Move this one up?
         end
     else
+        --[[ -- REMOVE
         if (max_ > #history) then
             local temp = 0
             for i, n in ipairs(history) do
@@ -1414,9 +1439,35 @@ function drawHistoryList(page)
                 max_ = #history
             end
         end
-        tempGlobal.pageMax_ = pageMax_
-        print("TODO") -- TODO
+        ]]--
+        local last_id = -1
+        local timestamps_count = 0
+        for y_ = 1 + list_offset, 1 + list_offset + maxOnPage_ - 1 do
+            local i_ = getIndexForEntryOnPage(page_, y_)
+            local i__ = getIndexForEntryOnHistoryPage(i_)
+            if (last_id ~= i__) then
+                last_id = i__
+                timestamps_count = 0
+            end
+            timestamps_count = timestamps_count + 1
+            local stargate = history[i__]
+            -- FIXME What to do if "timestamps" is nil or empty?
+            local timestamp_ = stargate.timestamps[timestamps_count]
+
+
+            -- TEST BEGIN
+            mon.setBackgroundColor(getColorForEntryOnPage(page_, y_))
+            mon.setTextColor(colors.black)
+            mon.setCursorPos(1, y_)
+            mon.write(stargate.address)
+            -- TEST END
+
+
+            -- TODO
+            drawX(y_)
+        end
     end
+    drawBottom(colors.gray) -- TODO GOOD?
     drawSmallBackButton()
     drawHistoryStandardButton()
     -- TODO Save/Block Screens etc
@@ -1435,6 +1486,75 @@ function updateHistoryStandardButton()
     drawHistoryStandardButton()
 end
 
+function isHistoryStandardButtonPressed(x_, y_)
+    return (x_ >= 7 and x_ <= width - 7) and (y_ >= height - 2 and y_ <= height)
+end
+
+function isSaveAddressButtonPressed(x_, y_)
+    return (x_ >= width - 8 - 3 and x_ <= width - 8) and (y_ >= 1 + list_offset and y_ <= 1 + list_offset + entries_per_page)
+end
+
+function isBlockAddressButtonPressed(x_, y_)
+    return (x_ >= width - 2 - 4 and x_ <= width - 2) and (y_ >= 1 + list_offset and y_ <= 1 + list_offset + entries_per_page)
+end
+
+function testForHistoryStandardButton(x_, y_)
+    if (isHistoryStandardButtonPressed(x_, y_)) then
+        toggleHistoryStandardMode()
+        updateHistoryStandardButton()
+        return true
+    elseif (isSaveAddressButtonPressed(x_, y_)) then
+        saveAddress(y_)
+        return true
+    elseif (isBlockAddressButtonPressed(x_, y_)) then
+        blockAddress(y_)
+        return true
+    end
+    return false
+end
+
+function toggleHistoryStandardMode()
+    loadSettings()
+    if (settings.history_distinct) then
+        settings.history_distinct = false
+    else
+        settings.history_distinct = true
+    end
+    saveSettings()
+end
+
+function saveAddress(y_)
+    --[[ -- TODO
+    local i_ = getIndexForEntryOnPage(currentPages.securityPage, y_)
+    local i__ = getIndexForEntryOnSecurityPage(i_)
+    local stargate = stargates[i__]
+    if (stargate.locked) then
+        stargate.locked = false
+    else
+        stargate.locked = true
+    end
+    saveStargates()
+    repaintMenu()
+    ]]--
+end
+
+function blockAddress(y_)
+    --[[ -- TODO
+    local i_ = getIndexForEntryOnPage(currentPages.securityPage, y_)
+    local i__ = getIndexForEntryOnSecurityPage(i_)
+    local stargate = stargates[i__]
+    if (stargate.state == security_allow) then
+        stargate.state = security_deny
+    elseif (stargate.state == security_deny) then
+        stargate.state = security_none
+    elseif (stargate.state == security_none) then
+        stargate.state = security_allow
+    end
+    saveStargates()
+    repaintMenu()
+    ]]--
+end
+
 function logDial(remoteAddress_, timestamp, incoming)
     loadHistory()
     local index = utils.getTableIndexFromArray(history, remoteAddress_, getAddress)
@@ -1449,6 +1569,21 @@ function logDial(remoteAddress_, timestamp, incoming)
         end
     end
     saveHistory()
+end
+
+function getIndexForEntryOnHistoryPage(i_)
+    if (settings.history_distinct) then
+        return i_
+    else
+        local timestamps_count = 0
+        for i, n in ipairs(history) do
+            timestamps_count = timestamps_count + #n.timestamps
+            if (timestamps_count >= i_) then -- TODO Test this
+                return i
+            end
+        end
+        return -1
+    end
 end
 
 -- TODO Add a toggle Button, that toggles between showing "ALL", "KNOWN (ONLY)" and "UNKNOWN (ONLY)" so you can filter for connections
@@ -1674,8 +1809,11 @@ while true do
             elseif (isXPressed(x_, y_)) then
                 historyMenuXPressed(y_) -- TODO !!!
             elseif (testForScroll(x_, y_)) then
+                -- Nothing here
+            elseif (testForHistoryStandardButton(x_, y_)) then
+                -- Nothing here
             end
-            -- TODO
+            -- TODO finished?
         elseif (menu == menu_main) then
             if (isRingInnerPressed(x_, y_)) then
                 if (state == stargate_state_idle) then
@@ -1721,9 +1859,9 @@ while true do
             elseif (isXPressed(x_, y_)) then
                 securityMenuXPressed(y_)
             elseif (testForScroll(x_, y_)) then
-                -- Nothing
+                -- Nothing here
             elseif (testForSecurityStandardButton(x_, y_)) then
-                -- Nothing
+                -- Nothing here
             end
             -- TODO finished?
         end
