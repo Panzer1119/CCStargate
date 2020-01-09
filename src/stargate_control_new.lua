@@ -2,7 +2,7 @@
 
   Author: Panzer1119
   
-  Date: Edited 09 Jan 2020 - 09:36 PM
+  Date: Edited 09 Jan 2020 - 11:23 PM
   
   Original Source: https://github.com/Panzer1119/CCStargate/blob/master/stargate_control_new.lua
   
@@ -1264,6 +1264,9 @@ function toggleLock(y_)
     local i_ = getIndexForEntryOnPage(currentPages.securityPage, y_)
     local i__ = getIndexForEntryOnSecurityPage(i_)
     local stargate = stargates[i__]
+    if (stargate == nil) then
+        return
+    end
     if (stargate.locked) then
         stargate.locked = false
     else
@@ -1277,6 +1280,9 @@ function toggleBehavior(y_)
     local i_ = getIndexForEntryOnPage(currentPages.securityPage, y_)
     local i__ = getIndexForEntryOnSecurityPage(i_)
     local stargate = stargates[i__]
+    if (stargate == nil) then
+        return
+    end
     if (stargate.state == security_allow) then
         stargate.state = security_deny
     elseif (stargate.state == security_deny) then
@@ -1650,6 +1656,9 @@ function saveAddress(y_)
     local i_ = getIndexForEntryOnPage(currentPages.securityPage, y_)
     local i__ = getIndexForEntryOnSecurityPage(i_)
     local stargate = stargates[i__]
+    if (stargate == nil) then
+        return
+    end
     if (stargate.locked) then
         stargate.locked = false
     else
@@ -1665,6 +1674,9 @@ function blockAddress(y_)
     local i_ = getIndexForEntryOnPage(currentPages.securityPage, y_)
     local i__ = getIndexForEntryOnSecurityPage(i_)
     local stargate = stargates[i__]
+    if (stargate == nil) then
+        return
+    end
     if (stargate.state == security_allow) then
         stargate.state = security_deny
     elseif (stargate.state == security_deny) then
